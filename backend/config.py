@@ -4,3 +4,4 @@ DB_CONFIG = {
     "database": "CalidadYPruebas_SE",
     "trusted_connection": "yes"
 }
+SECRET_KEY = "SistemaAdministrativoEscolarJWT2026Super"
