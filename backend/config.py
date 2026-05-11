@@ -1,7 +1,6 @@
 DB_CONFIG = {
-    "driver": "{SQL Server}",
+    "driver": "{ODBC Driver 17 for SQL Server}",
     "server": "localhost",
     "database": "CalidadYPruebas_SE",
-    "user": "sa",
-    "password": ""
+    "trusted_connection": "yes"
 }
