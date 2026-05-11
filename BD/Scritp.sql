@@ -1,0 +1,351 @@
+USE [master]
+GO
+/****** Object:  Database [CalidadYPruebas_SE]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+CREATE DATABASE [CalidadYPruebas_SE]
+ CONTAINMENT = NONE
+ ON  PRIMARY 
+( NAME = N'CalidadYPruebas_SE', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\CalidadYPruebas_SE.mdf' , SIZE = 8192KB , MAXSIZE = UNLIMITED, FILEGROWTH = 65536KB )
+ LOG ON 
+( NAME = N'CalidadYPruebas_SE_log', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\CalidadYPruebas_SE_log.ldf' , SIZE = 8192KB , MAXSIZE = 2048GB , FILEGROWTH = 65536KB )
+ WITH CATALOG_COLLATION = DATABASE_DEFAULT, LEDGER = OFF
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET COMPATIBILITY_LEVEL = 170
+GO
+IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
+begin
+EXEC [CalidadYPruebas_SE].[dbo].[sp_fulltext_database] @action = 'enable'
+end
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET ANSI_NULL_DEFAULT OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET ANSI_NULLS OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET ANSI_PADDING OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET ANSI_WARNINGS OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET ARITHABORT OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET AUTO_CLOSE OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET AUTO_SHRINK OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET AUTO_UPDATE_STATISTICS ON 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET CURSOR_CLOSE_ON_COMMIT OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET CURSOR_DEFAULT  GLOBAL 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET CONCAT_NULL_YIELDS_NULL OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET NUMERIC_ROUNDABORT OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET QUOTED_IDENTIFIER OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET RECURSIVE_TRIGGERS OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET  DISABLE_BROKER 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET DATE_CORRELATION_OPTIMIZATION OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET TRUSTWORTHY OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET ALLOW_SNAPSHOT_ISOLATION OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET PARAMETERIZATION SIMPLE 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET READ_COMMITTED_SNAPSHOT OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET HONOR_BROKER_PRIORITY OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET RECOVERY FULL 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET  MULTI_USER 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET PAGE_VERIFY CHECKSUM  
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET DB_CHAINING OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET FILESTREAM( NON_TRANSACTED_ACCESS = OFF ) 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET TARGET_RECOVERY_TIME = 60 SECONDS 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET DELAYED_DURABILITY = DISABLED 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET OPTIMIZED_LOCKING = OFF 
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET ACCELERATED_DATABASE_RECOVERY = OFF  
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET QUERY_STORE = ON
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 30), DATA_FLUSH_INTERVAL_SECONDS = 900, INTERVAL_LENGTH_MINUTES = 60, MAX_STORAGE_SIZE_MB = 1000, QUERY_CAPTURE_MODE = AUTO, SIZE_BASED_CLEANUP_MODE = AUTO, MAX_PLANS_PER_QUERY = 200, WAIT_STATS_CAPTURE_MODE = ON)
+GO
+USE [CalidadYPruebas_SE]
+GO
+/****** Object:  Table [dbo].[administrativos]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[administrativos](
+	[id_admin] [int] IDENTITY(1,1) NOT NULL,
+	[id_usuario] [int] NOT NULL,
+	[nombre] [varchar](100) NOT NULL,
+	[puesto] [varchar](50) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_admin] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[alumnos]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[alumnos](
+	[id_alumno] [int] IDENTITY(1,1) NOT NULL,
+	[id_usuario] [int] NOT NULL,
+	[matricula] [varchar](20) NOT NULL,
+	[nombre] [varchar](100) NOT NULL,
+	[curp] [varchar](18) NOT NULL,
+	[id_carrera] [int] NOT NULL,
+	[semestre] [int] NOT NULL,
+	[estatus] [varchar](20) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_alumno] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[curp] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[matricula] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[carreras]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[carreras](
+	[id_carrera] [int] IDENTITY(1,1) NOT NULL,
+	[nombre] [varchar](100) NOT NULL,
+	[activa] [bit] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_carrera] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[docentes]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[docentes](
+	[id_docente] [int] IDENTITY(1,1) NOT NULL,
+	[id_usuario] [int] NOT NULL,
+	[nombre] [varchar](100) NOT NULL,
+	[especialidad] [varchar](100) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_docente] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[inscripciones]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[inscripciones](
+	[id_inscripcion] [int] IDENTITY(1,1) NOT NULL,
+	[id_alumno] [int] NOT NULL,
+	[id_materia] [int] NOT NULL,
+	[id_periodo] [int] NOT NULL,
+	[estado] [varchar](20) NULL,
+	[fecha_inscripcion] [datetime] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_inscripcion] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[id_alumno] ASC,
+	[id_materia] ASC,
+	[id_periodo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[logs_auditoria]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[logs_auditoria](
+	[id_log] [int] IDENTITY(1,1) NOT NULL,
+	[id_usuario] [int] NOT NULL,
+	[accion] [varchar](100) NOT NULL,
+	[descripcion] [text] NULL,
+	[fecha] [datetime] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_log] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[materias]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[materias](
+	[id_materia] [int] IDENTITY(1,1) NOT NULL,
+	[clave] [varchar](20) NOT NULL,
+	[nombre] [varchar](100) NOT NULL,
+	[id_carrera] [int] NOT NULL,
+	[semestre] [int] NOT NULL,
+	[cupo] [int] NOT NULL,
+	[activa] [bit] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_materia] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[clave] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[pagos]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[pagos](
+	[id_pago] [int] IDENTITY(1,1) NOT NULL,
+	[id_inscripcion] [int] NOT NULL,
+	[monto] [decimal](10, 2) NOT NULL,
+	[estado] [varchar](20) NULL,
+	[fecha_pago] [datetime] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_pago] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[periodos]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[periodos](
+	[id_periodo] [int] IDENTITY(1,1) NOT NULL,
+	[nombre] [varchar](50) NOT NULL,
+	[activo] [bit] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_periodo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[roles]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[roles](
+	[id_rol] [int] IDENTITY(1,1) NOT NULL,
+	[nombre] [varchar](30) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_rol] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[nombre] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[usuarios]    Script Date: 11/02/2026 03:17:36 a. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[usuarios](
+	[id_usuario] [int] IDENTITY(1,1) NOT NULL,
+	[usuario] [varchar](50) NOT NULL,
+	[password_hash] [varchar](255) NOT NULL,
+	[id_rol] [int] NOT NULL,
+	[activo] [bit] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_usuario] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[usuario] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[alumnos] ADD  DEFAULT ('ACTIVO') FOR [estatus]
+GO
+ALTER TABLE [dbo].[carreras] ADD  DEFAULT ((1)) FOR [activa]
+GO
+ALTER TABLE [dbo].[inscripciones] ADD  DEFAULT ('PENDIENTE') FOR [estado]
+GO
+ALTER TABLE [dbo].[inscripciones] ADD  DEFAULT (getdate()) FOR [fecha_inscripcion]
+GO
+ALTER TABLE [dbo].[logs_auditoria] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[materias] ADD  DEFAULT ((1)) FOR [activa]
+GO
+ALTER TABLE [dbo].[pagos] ADD  DEFAULT ('PENDIENTE') FOR [estado]
+GO
+ALTER TABLE [dbo].[periodos] ADD  DEFAULT ((0)) FOR [activo]
+GO
+ALTER TABLE [dbo].[usuarios] ADD  DEFAULT ((1)) FOR [activo]
+GO
+ALTER TABLE [dbo].[administrativos]  WITH CHECK ADD FOREIGN KEY([id_usuario])
+REFERENCES [dbo].[usuarios] ([id_usuario])
+GO
+ALTER TABLE [dbo].[alumnos]  WITH CHECK ADD FOREIGN KEY([id_carrera])
+REFERENCES [dbo].[carreras] ([id_carrera])
+GO
+ALTER TABLE [dbo].[alumnos]  WITH CHECK ADD FOREIGN KEY([id_usuario])
+REFERENCES [dbo].[usuarios] ([id_usuario])
+GO
+ALTER TABLE [dbo].[docentes]  WITH CHECK ADD FOREIGN KEY([id_usuario])
+REFERENCES [dbo].[usuarios] ([id_usuario])
+GO
+ALTER TABLE [dbo].[inscripciones]  WITH CHECK ADD FOREIGN KEY([id_alumno])
+REFERENCES [dbo].[alumnos] ([id_alumno])
+GO
+ALTER TABLE [dbo].[inscripciones]  WITH CHECK ADD FOREIGN KEY([id_materia])
+REFERENCES [dbo].[materias] ([id_materia])
+GO
+ALTER TABLE [dbo].[inscripciones]  WITH CHECK ADD FOREIGN KEY([id_periodo])
+REFERENCES [dbo].[periodos] ([id_periodo])
+GO
+ALTER TABLE [dbo].[logs_auditoria]  WITH CHECK ADD FOREIGN KEY([id_usuario])
+REFERENCES [dbo].[usuarios] ([id_usuario])
+GO
+ALTER TABLE [dbo].[materias]  WITH CHECK ADD FOREIGN KEY([id_carrera])
+REFERENCES [dbo].[carreras] ([id_carrera])
+GO
+ALTER TABLE [dbo].[pagos]  WITH CHECK ADD FOREIGN KEY([id_inscripcion])
+REFERENCES [dbo].[inscripciones] ([id_inscripcion])
+GO
+ALTER TABLE [dbo].[usuarios]  WITH CHECK ADD FOREIGN KEY([id_rol])
+REFERENCES [dbo].[roles] ([id_rol])
+GO
+USE [master]
+GO
+ALTER DATABASE [CalidadYPruebas_SE] SET  READ_WRITE 
+GO
