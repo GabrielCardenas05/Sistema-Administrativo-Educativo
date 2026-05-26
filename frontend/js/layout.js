@@ -11,6 +11,7 @@ const Layout = {
     this._bindLogout();
     this._bindSidebarVisibility();
     setActiveNav(activePage);
+    this._movePageContentWhenReady();
   },
 
   _injectHTML(activePage) {
@@ -150,15 +151,33 @@ const Layout = {
             </div>
           </div>
           <!-- Page content injected here -->
-          <div class="app-content p-4">
-    `);
-
-    // Cerrar los divs al final del body
-    document.body.insertAdjacentHTML('beforeend', `
-          </div><!-- /app-content -->
+          <div class="app-content p-4" id="pageContent"></div>
         </main><!-- /app-main -->
       </div><!-- /app-wrapper -->
     `);
+  },
+
+  _movePageContentWhenReady() {
+    const moveContent = () => {
+      const target = document.getElementById('pageContent');
+      if (!target) return;
+
+      const nodes = Array.from(document.body.childNodes).filter(node => {
+        if (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) return false;
+        if (node.nodeType !== Node.ELEMENT_NODE) return true;
+        if (node.classList.contains('app-wrapper')) return false;
+        if (node.matches('script[src*="../js/api.js"], script[src*="../js/ui.js"], script[src*="../js/layout.js"]')) return false;
+        return true;
+      });
+
+      nodes.forEach(node => target.appendChild(node));
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', moveContent, { once: true });
+    } else {
+      moveContent();
+    }
   },
 
   _bindLogout() {
