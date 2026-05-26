@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Alumnos — SAE</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"/>
+  <link rel="stylesheet" href="../css/custom.css"/>
+  <style>
+    body{font-family:'Nunito',sans-serif;background:#f3f4f8;}
+    .app-sidebar{width:260px;min-height:100vh;position:fixed;top:0;left:0;display:flex;flex-direction:column;z-index:100;}
+    .app-main{margin-left:260px;min-height:100vh;display:flex;flex-direction:column;}
+    @media(max-width:991px){.app-main{margin-left:0;}}
+    .nav-sidebar{padding:0 .5rem;}
+    .nav-sidebar .nav-link{padding:.6rem .9rem;font-size:.88rem;font-weight:600;display:flex;align-items:center;}
+    .sidebar-header{padding:.9rem 1rem .3rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);}
+    .sidebar-footer{margin-top:auto;}
+    #searchInput{max-width:280px;}
+  </style>
+</head>
+<body>
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+  if(!Auth.guardPage('ADMINISTRADOR','ADMINISTRATIVO','DOCENTE')) throw new Error();
+  Layout.init('alumnos');
+  Layout.setBreadcrumb([{label:'Alumnos'}]);
+</script>
+
+<!-- Contenido -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="section-title mb-0"><i class="bi bi-people me-2" style="color:#1a6fc4;"></i>Alumnos</h4>
+    <p class="text-muted mb-0" style="font-size:.88rem;">Gestión de alumnos registrados</p>
+  </div>
+  <button class="btn btn-primary btn-sm px-3" id="btnNuevo" style="display:none;"
+          onclick="abrirModal()">
+    <i class="bi bi-plus-lg me-1"></i> Nuevo Alumno
+  </button>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-3 flex-wrap">
+    <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Buscar por nombre o matrícula..."/>
+    <span class="ms-auto text-muted" style="font-size:.82rem;" id="totalLabel">Cargando...</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Matrícula</th>
+            <th>Nombre</th>
+            <th>Carrera</th>
+            <th>Semestre</th>
+            <th>Estatus</th>
+            <th class="text-end" id="thAcciones" style="display:none;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyAlumnos">
+          <tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal alumno -->
+<div class="modal fade" id="modalAlumno" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Nuevo Alumno</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formAlumno" novalidate>
+          <input type="hidden" id="alumnoId"/>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-600">Matrícula *</label>
+              <input type="text" class="form-control" id="matricula" placeholder="Ej. 2024001" required/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-600">Nombre completo *</label>
+              <input type="text" class="form-control" id="nombre" placeholder="Nombre y apellidos" required/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-600">CURP *</label>
+              <input type="text" class="form-control" id="curp" placeholder="18 caracteres" maxlength="18" style="text-transform:uppercase;" required/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-600">ID Usuario *</label>
+              <input type="number" class="form-control" id="id_usuario" placeholder="ID del usuario del sistema"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-600">Carrera *</label>
+              <select class="form-select" id="id_carrera" required>
+                <option value="">— Seleccionar —</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-600">Semestre *</label>
+              <select class="form-select" id="semestre">
+                <option value="">—</option>
+                ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}°</option>`).join('')}
+              </select>
+            </div>
+            <div class="col-md-3" id="estatusField" style="display:none;">
+              <label class="form-label fw-600">Estatus</label>
+              <select class="form-select" id="estatus">
+                <option value="ACTIVO">Activo</option>
+                <option value="INACTIVO">Inactivo</option>
+                <option value="EGRESADO">Egresado</option>
+                <option value="BAJA">Baja</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary" id="btnGuardar" onclick="guardarAlumno()">
+          <span id="btnGuardarText">Guardar</span>
+          <span class="spinner-border spinner-border-sm ms-1" id="spinGuardar" style="display:none;"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmación -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body p-4 text-center">
+        <i class="bi bi-exclamation-triangle-fill text-warning fs-2 mb-3 d-block"></i>
+        <p class="mb-0" id="confirmModalMsg">¿Estás seguro?</p>
+      </div>
+      <div class="modal-footer justify-content-center border-0 pt-0 pb-3">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-danger btn-sm" id="confirmModalOk">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let alumnos = [];
+let carreras = [];
+const canEdit = Auth.hasRole('ADMINISTRADOR','ADMINISTRATIVO');
+
+// Mostrar botón nuevo y columna acciones si tiene permisos
+if (canEdit) {
+  document.getElementById('btnNuevo').style.display = 'inline-flex';
+  document.getElementById('thAcciones').style.display = '';
+}
+
+async function cargarDatos() {
+  [alumnos, carreras] = await Promise.all([
+    API.alumnos.list().then(r => r?.data || []),
+    API.carreras.list().then(r => r?.data || []),
+  ]);
+  // Poblar select de carrera en modal
+  const sel = document.getElementById('id_carrera');
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+    carreras.map(c => `<option value="${c.id_carrera}">${c.nombre}</option>`).join('');
+
+  renderAlumnos(alumnos);
+}
+
+function renderAlumnos(data) {
+  const tbody = document.getElementById('tbodyAlumnos');
+  document.getElementById('totalLabel').textContent = `${data.length} registros`;
+
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-people" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i>Sin alumnos registrados</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(a => {
+    const carrera = carreras.find(c => c.id_carrera === a.id_carrera);
+    const estatusBadge = {
+      ACTIVO:   'bg-success',
+      INACTIVO: 'bg-secondary',
+      EGRESADO: 'bg-info',
+      BAJA:     'bg-danger',
+    }[a.estatus] || 'bg-secondary';
+
+    return `<tr>
+      <td><span class="fw-600" style="color:#1a6fc4;">${a.matricula}</span></td>
+      <td>${a.nombre}</td>
+      <td><small class="text-muted">${carrera?.nombre || '—'}</small></td>
+      <td class="text-center">${a.semestre}°</td>
+      <td><span class="badge ${estatusBadge}">${a.estatus}</span></td>
+      ${canEdit ? `<td class="text-end">
+        <button class="btn btn-outline-primary btn-action me-1" onclick="abrirModal(${a.id_alumno})" title="Editar">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-outline-danger btn-action" onclick="eliminarAlumno(${a.id_alumno}, '${a.nombre}')" title="Eliminar">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>` : ''}
+    </tr>`;
+  }).join('');
+}
+
+// Búsqueda
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  const filtrado = alumnos.filter(a =>
+    a.nombre.toLowerCase().includes(q) || a.matricula.toLowerCase().includes(q)
+  );
+  renderAlumnos(filtrado);
+});
+
+let bsModal;
+function abrirModal(id = null) {
+  const form = document.getElementById('formAlumno');
+  form.reset();
+  document.getElementById('alumnoId').value = '';
+  document.getElementById('estatusField').style.display = 'none';
+
+  if (id) {
+    const a = alumnos.find(x => x.id_alumno === id);
+    if (!a) return;
+    document.getElementById('modalTitle').textContent = 'Editar Alumno';
+    document.getElementById('alumnoId').value  = id;
+    document.getElementById('matricula').value = a.matricula;
+    document.getElementById('nombre').value    = a.nombre;
+    document.getElementById('curp').value      = a.curp || '';
+    document.getElementById('id_usuario').value = a.id_usuario || '';
+    document.getElementById('id_carrera').value = a.id_carrera || '';
+    document.getElementById('semestre').value  = a.semestre;
+    document.getElementById('estatus').value   = a.estatus;
+    document.getElementById('estatusField').style.display = '';
+  } else {
+    document.getElementById('modalTitle').textContent = 'Nuevo Alumno';
+  }
+
+  if (!bsModal) bsModal = new bootstrap.Modal(document.getElementById('modalAlumno'));
+  bsModal.show();
+}
+
+async function guardarAlumno() {
+  const id = document.getElementById('alumnoId').value;
+  const data = {
+    matricula:  document.getElementById('matricula').value.trim(),
+    nombre:     document.getElementById('nombre').value.trim(),
+    curp:       document.getElementById('curp').value.trim().toUpperCase(),
+    id_usuario: parseInt(document.getElementById('id_usuario').value) || null,
+    id_carrera: parseInt(document.getElementById('id_carrera').value) || null,
+    semestre:   parseInt(document.getElementById('semestre').value) || null,
+    estatus:    document.getElementById('estatus').value,
+  };
+
+  if (!data.matricula || !data.nombre || !data.semestre) {
+    Toast.error('Completa los campos obligatorios (*)');
+    return;
+  }
+
+  const btn = document.getElementById('btnGuardar');
+  const spin = document.getElementById('spinGuardar');
+  btn.disabled = true; spin.style.display = 'inline-block';
+
+  const res = id
+    ? await API.alumnos.update(id, data)
+    : await API.alumnos.create(data);
+
+  btn.disabled = false; spin.style.display = 'none';
+
+  if (res?.success) {
+    Toast.success(id ? 'Alumno actualizado' : 'Alumno creado correctamente');
+    bsModal.hide();
+    await cargarDatos();
+  } else {
+    Toast.error(res?.message || 'Error al guardar');
+  }
+}
+
+async function eliminarAlumno(id, nombre) {
+  const ok = await confirmDialog(`¿Eliminar al alumno "${nombre}"? Esta acción no se puede deshacer.`);
+  if (!ok) return;
+  const res = await API.alumnos.delete(id);
+  if (res?.success) {
+    Toast.success('Alumno eliminado');
+    await cargarDatos();
+  } else {
+    Toast.error(res?.message || 'Error al eliminar');
+  }
+}
+
+cargarDatos();
+</script>
+</body>
+</html>

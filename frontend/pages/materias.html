@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Materias — SAE</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"/>
+  <link rel="stylesheet" href="../css/custom.css"/>
+  <style>
+    body{font-family:'Nunito',sans-serif;background:#f3f4f8;}
+    .app-sidebar{width:260px;min-height:100vh;position:fixed;top:0;left:0;display:flex;flex-direction:column;z-index:100;}
+    .app-main{margin-left:260px;min-height:100vh;display:flex;flex-direction:column;}
+    .nav-sidebar{padding:0 .5rem;}
+    .nav-sidebar .nav-link{padding:.6rem .9rem;font-size:.88rem;font-weight:600;display:flex;align-items:center;}
+    .sidebar-header{padding:.9rem 1rem .3rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);}
+    .sidebar-footer{margin-top:auto;}
+  </style>
+</head>
+<body>
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+  if(!Auth.guardPage('ADMINISTRADOR','ADMINISTRATIVO')) throw new Error();
+  Layout.init('materias');
+  Layout.setBreadcrumb([{label:'Materias'}]);
+</script>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="section-title mb-0"><i class="bi bi-journal-bookmark me-2" style="color:#d97706;"></i>Materias</h4>
+    <p class="text-muted mb-0" style="font-size:.88rem;">Catálogo de materias por carrera</p>
+  </div>
+  <button class="btn btn-primary btn-sm px-3" onclick="abrirModal()">
+    <i class="bi bi-plus-lg me-1"></i> Nueva Materia
+  </button>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4">
+        <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Buscar materia..."/>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select form-select-sm" id="filtroCarrera">
+          <option value="">Todas las carreras</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" id="filtroSemestre">
+          <option value="">Todos los semestres</option>
+          ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}° semestre</option>`).join('')}
+        </select>
+      </div>
+      <div class="col-md-3 text-end">
+        <span class="text-muted" style="font-size:.82rem;" id="totalLabel">Cargando...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Clave</th><th>Nombre</th><th>Carrera</th><th>Semestre</th><th>Cupo</th><th>Estado</th><th class="text-end">Acciones</th></tr>
+        </thead>
+        <tbody id="tbodyMaterias">
+          <tr><td colspan="7" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalMateria" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Nueva Materia</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="materiaId"/>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-600">Clave *</label>
+            <input type="text" class="form-control" id="clave" placeholder="Ej. MAT101" style="text-transform:uppercase;"/>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-600">Nombre *</label>
+            <input type="text" class="form-control" id="nombre" placeholder="Nombre de la materia"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-600">Carrera *</label>
+            <select class="form-select" id="id_carrera">
+              <option value="">— Seleccionar —</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-600">Semestre *</label>
+            <select class="form-select" id="semestre">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}°</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-600">Cupo</label>
+            <input type="number" class="form-control" id="cupo" placeholder="35" min="1"/>
+          </div>
+          <div class="col-md-4" id="activaField" style="display:none;">
+            <label class="form-label fw-600">Estado</label>
+            <select class="form-select" id="activa">
+              <option value="1">Activa</option>
+              <option value="0">Inactiva</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarMateria()">
+          Guardar <span class="spinner-border spinner-border-sm ms-1" id="spinGuardar" style="display:none;"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="confirmModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body p-4 text-center">
+        <i class="bi bi-exclamation-triangle-fill text-warning fs-2 mb-3 d-block"></i>
+        <p class="mb-0" id="confirmModalMsg"></p>
+      </div>
+      <div class="modal-footer justify-content-center border-0 pt-0 pb-3">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-danger btn-sm" id="confirmModalOk">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let materias = [], carreras = [];
+let bsModal;
+
+async function cargarDatos() {
+  [materias, carreras] = await Promise.all([
+    API.materias.list().then(r => r?.data || []),
+    API.carreras.list().then(r => r?.data || []),
+  ]);
+  const fc = document.getElementById('filtroCarrera');
+  fc.innerHTML = '<option value="">Todas las carreras</option>' +
+    carreras.map(c => `<option value="${c.id_carrera}">${c.nombre}</option>`).join('');
+  const sel = document.getElementById('id_carrera');
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+    carreras.map(c => `<option value="${c.id_carrera}">${c.nombre}</option>`).join('');
+  aplicarFiltros();
+}
+
+function aplicarFiltros() {
+  const q  = document.getElementById('searchInput').value.toLowerCase();
+  const fc = document.getElementById('filtroCarrera').value;
+  const fs = document.getElementById('filtroSemestre').value;
+  const filtradas = materias.filter(m =>
+    (!q  || m.nombre.toLowerCase().includes(q) || m.clave.toLowerCase().includes(q)) &&
+    (!fc || m.id_carrera == fc) &&
+    (!fs || m.semestre == fs)
+  );
+  renderMaterias(filtradas);
+}
+
+function renderMaterias(data) {
+  document.getElementById('totalLabel').textContent = `${data.length} registros`;
+  const tbody = document.getElementById('tbodyMaterias');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5"><i class="bi bi-journal-bookmark" style="font-size:2rem;display:block;"></i>Sin materias</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(m => {
+    const carrera = carreras.find(c => c.id_carrera === m.id_carrera);
+    return `<tr>
+      <td><span class="badge bg-warning text-dark fw-600">${m.clave}</span></td>
+      <td><span class="fw-600">${m.nombre}</span></td>
+      <td><small class="text-muted">${carrera?.nombre || '—'}</small></td>
+      <td class="text-center">${m.semestre}°</td>
+      <td class="text-center">${m.cupo}</td>
+      <td><span class="badge ${m.activa ? 'bg-success' : 'bg-secondary'}">${m.activa ? 'Activa' : 'Inactiva'}</span></td>
+      <td class="text-end">
+        <button class="btn btn-outline-primary btn-action me-1" onclick="abrirModal(${m.id_materia})"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-outline-danger btn-action" onclick="eliminarMateria(${m.id_materia}, '${m.nombre}')"><i class="bi bi-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+['searchInput','filtroCarrera','filtroSemestre'].forEach(id =>
+  document.getElementById(id).addEventListener('input', aplicarFiltros)
+);
+
+function abrirModal(id = null) {
+  document.getElementById('materiaId').value = '';
+  ['clave','nombre','cupo'].forEach(f => document.getElementById(f).value = '');
+  document.getElementById('id_carrera').value = '';
+  document.getElementById('semestre').value = '';
+  document.getElementById('activaField').style.display = 'none';
+
+  if (id) {
+    const m = materias.find(x => x.id_materia === id);
+    if (!m) return;
+    document.getElementById('modalTitle').textContent = 'Editar Materia';
+    document.getElementById('materiaId').value  = id;
+    document.getElementById('clave').value      = m.clave;
+    document.getElementById('nombre').value     = m.nombre;
+    document.getElementById('id_carrera').value = m.id_carrera;
+    document.getElementById('semestre').value   = m.semestre;
+    document.getElementById('cupo').value       = m.cupo;
+    document.getElementById('activa').value     = m.activa ? '1' : '0';
+    document.getElementById('activaField').style.display = '';
+  } else {
+    document.getElementById('modalTitle').textContent = 'Nueva Materia';
+  }
+
+  if (!bsModal) bsModal = new bootstrap.Modal(document.getElementById('modalMateria'));
+  bsModal.show();
+}
+
+async function guardarMateria() {
+  const id = document.getElementById('materiaId').value;
+  const data = {
+    clave:      document.getElementById('clave').value.trim().toUpperCase(),
+    nombre:     document.getElementById('nombre').value.trim(),
+    id_carrera: parseInt(document.getElementById('id_carrera').value) || null,
+    semestre:   parseInt(document.getElementById('semestre').value) || null,
+    cupo:       parseInt(document.getElementById('cupo').value) || 35,
+    activa:     document.getElementById('activa').value === '1' ? 1 : 0,
+  };
+  if (!data.clave || !data.nombre) { Toast.error('Clave y nombre son requeridos'); return; }
+
+  document.getElementById('spinGuardar').style.display = 'inline-block';
+  const res = id ? await API.materias.update(id, data) : await API.materias.create(data);
+  document.getElementById('spinGuardar').style.display = 'none';
+
+  if (res?.success) { Toast.success(id ? 'Materia actualizada' : 'Materia creada'); bsModal.hide(); await cargarDatos(); }
+  else Toast.error(res?.message || 'Error al guardar');
+}
+
+async function eliminarMateria(id, nombre) {
+  const ok = await confirmDialog(`¿Eliminar la materia "${nombre}"?`);
+  if (!ok) return;
+  const res = await API.materias.delete(id);
+  if (res?.success) { Toast.success('Materia eliminada'); await cargarDatos(); }
+  else Toast.error(res?.message || 'Error al eliminar');
+}
+
+cargarDatos();
+</script>
+</body>
+</html>

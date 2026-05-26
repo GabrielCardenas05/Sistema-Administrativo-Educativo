@@ -1,26 +1,12 @@
-from database import get_connection
+from repositories.usuario_repo import get_usuario_by_username, get_roles_by_user_id
 
 
-def get_usuario_by_username(username):
-
-    conn = get_connection()
-
-    cursor = conn.cursor()
-
-    query = """
-        SELECT
-            id_usuario,
-            usuario,
-            password_hash,
-            activo
-        FROM usuarios
-        WHERE usuario = ?
+def get_usuario_con_roles(username: str):
     """
-
-    cursor.execute(query, (username,))
-
-    usuario = cursor.fetchone()
-
-    conn.close()
-
-    return usuario
+    Devuelve (usuario_obj, roles_list) o (None, []) si no existe.
+    """
+    usuario = get_usuario_by_username(username)
+    if not usuario:
+        return None, []
+    roles = get_roles_by_user_id(usuario.id_usuario)
+    return usuario, roles

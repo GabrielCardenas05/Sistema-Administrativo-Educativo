@@ -1,0 +1,138 @@
+/* ── Variables ─────────────────────────────────────────────────────────────── */
+:root {
+  --brand-primary:   #1a6fc4;
+  --brand-accent:    #0ea5e9;
+  --brand-dark:      #0f2544;
+  --sidebar-bg:      #0f2544;
+  --sidebar-text:    #c8d8ee;
+  --sidebar-active:  #1a6fc4;
+  --sidebar-hover:   rgba(26,111,196,.18);
+  --header-bg:       #ffffff;
+  --font-main:       'Nunito', sans-serif;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+body { font-family: var(--font-main); }
+
+/* ── Login page ────────────────────────────────────────────────────────────── */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f2544 0%, #1a3a6b 55%, #1a6fc4 100%);
+  position: relative;
+  overflow: hidden;
+}
+.login-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 20% 80%, rgba(14,165,233,.15) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(26,111,196,.2) 0%, transparent 45%);
+}
+.login-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 2.5rem 2.2rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  position: relative;
+  z-index: 1;
+}
+.login-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  margin-bottom: 2rem;
+}
+.login-logo .logo-icon {
+  width: 48px; height: 48px;
+  background: var(--brand-primary);
+  border-radius: .75rem;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.5rem;
+}
+.login-logo .logo-text { font-size: 1.1rem; font-weight: 700; color: var(--brand-dark); line-height: 1.2; }
+.login-logo .logo-sub  { font-size: .75rem; color: #6b7280; font-weight: 400; }
+
+/* ── Sidebar override ──────────────────────────────────────────────────────── */
+.app-sidebar { background: var(--sidebar-bg) !important; }
+.app-sidebar .sidebar-brand { border-bottom: 1px solid rgba(255,255,255,.08); }
+.app-sidebar .brand-text { color: #fff !important; font-weight: 700; font-size: 1rem; }
+.app-sidebar .nav-sidebar .nav-link {
+  color: var(--sidebar-text) !important;
+  border-radius: .5rem;
+  margin: .1rem .5rem;
+  transition: all .2s;
+}
+.app-sidebar .nav-sidebar .nav-link:hover { background: var(--sidebar-hover) !important; color: #fff !important; }
+.app-sidebar .nav-sidebar .nav-link.active {
+  background: var(--sidebar-active) !important;
+  color: #fff !important;
+}
+.app-sidebar .nav-sidebar .nav-link i { color: inherit !important; }
+.app-sidebar .sidebar-header { color: rgba(255,255,255,.4); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; padding: 1rem 1rem .35rem; }
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+.app-header { border-bottom: 1px solid #e5e7eb !important; }
+
+/* ── Content cards ─────────────────────────────────────────────────────────── */
+.card { border: 0; box-shadow: 0 1px 6px rgba(0,0,0,.07); border-radius: .75rem; }
+.card-header { background: #fff; border-bottom: 1px solid #f0f0f0; border-radius: .75rem .75rem 0 0 !important; }
+
+/* ── Stat cards ────────────────────────────────────────────────────────────── */
+.stat-card {
+  border-radius: 1rem;
+  padding: 1.4rem;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s, box-shadow .2s;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+.stat-card::after {
+  content: '';
+  position: absolute;
+  right: -1rem; top: -1rem;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.12);
+}
+.stat-card .stat-icon { font-size: 2rem; opacity: .85; }
+.stat-card .stat-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+.stat-card .stat-label { font-size: .82rem; opacity: .85; margin-top: .2rem; }
+.stat-alumnos  { background: linear-gradient(135deg, #1a6fc4, #0ea5e9); }
+.stat-docentes { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.stat-carreras { background: linear-gradient(135deg, #059669, #34d399); }
+.stat-materias { background: linear-gradient(135deg, #d97706, #fbbf24); }
+
+/* ── Tables ────────────────────────────────────────────────────────────────── */
+.table th { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; font-weight: 600; border-top: 0; }
+.table td { vertical-align: middle; font-size: .9rem; }
+.table-hover tbody tr:hover { background: #f8faff; }
+
+/* ── Badge rol ─────────────────────────────────────────────────────────────── */
+.badge-rol {
+  font-size: .7rem; font-weight: 600; padding: .25em .6em;
+  border-radius: .35rem; text-transform: uppercase; letter-spacing: .04em;
+}
+.badge-ADMINISTRADOR { background: #fee2e2; color: #dc2626; }
+.badge-ADMINISTRATIVO { background: #e0f2fe; color: #0369a1; }
+.badge-DOCENTE  { background: #f3e8ff; color: #7c3aed; }
+.badge-ALUMNO   { background: #dcfce7; color: #16a34a; }
+
+/* ── Modal ─────────────────────────────────────────────────────────────────── */
+.modal-header { border-bottom: 1px solid #f0f0f0; }
+.modal-footer { border-top: 1px solid #f0f0f0; }
+
+/* ── Empty state ───────────────────────────────────────────────────────────── */
+.empty-state { padding: 3rem; text-align: center; color: #9ca3af; }
+.empty-state i { font-size: 3rem; margin-bottom: 1rem; display: block; }
+
+/* ── Misc ──────────────────────────────────────────────────────────────────── */
+.btn-action { padding: .25rem .55rem; font-size: .8rem; }
+.cursor-pointer { cursor: pointer; }
+.section-title { font-weight: 700; color: var(--brand-dark); }

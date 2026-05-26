@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — SAE</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"/>
+  <link rel="stylesheet" href="../css/custom.css"/>
+  <style>
+    body { font-family:'Nunito',sans-serif; background:#f3f4f8; }
+    .app-sidebar { width:260px; min-height:100vh; position:fixed; top:0; left:0; display:flex; flex-direction:column; z-index:100; }
+    .app-main { margin-left:260px; min-height:100vh; display:flex; flex-direction:column; }
+    @media(max-width:991px){ .app-main{margin-left:0;} .app-sidebar{transform:translateX(-100%);transition:.3s;} .app-sidebar.open{transform:translateX(0);} }
+    .nav-sidebar { padding:0 .5rem; }
+    .nav-sidebar .nav-link { padding:.6rem .9rem; font-size:.88rem; font-weight:600; display:flex; align-items:center; }
+    .sidebar-header { padding:.9rem 1rem .3rem; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.4); }
+    .sidebar-footer { margin-top:auto; }
+  </style>
+</head>
+<body>
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+  if (!Auth.guardPage()) throw new Error('no auth');
+  Layout.init('dashboard');
+  Layout.setBreadcrumb([{label:'Dashboard'}]);
+</script>
+
+<!-- Contenido del dashboard -->
+<div id="dashContent">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h4 class="section-title mb-0">Dashboard</h4>
+      <p class="text-muted mb-0" style="font-size:.88rem;">Resumen general del sistema</p>
+    </div>
+    <span class="text-muted" style="font-size:.82rem;" id="fechaActual"></span>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="row g-3 mb-4" id="statCards">
+    <div class="col-6 col-lg-3">
+      <div class="stat-card stat-alumnos">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-value" id="cntAlumnos">—</div>
+            <div class="stat-label">Alumnos registrados</div>
+          </div>
+          <i class="bi bi-people-fill stat-icon"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card stat-docentes">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-value" id="cntDocentes">—</div>
+            <div class="stat-label">Docentes activos</div>
+          </div>
+          <i class="bi bi-person-badge-fill stat-icon"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card stat-carreras">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-value" id="cntCarreras">—</div>
+            <div class="stat-label">Carreras</div>
+          </div>
+          <i class="bi bi-diagram-3-fill stat-icon"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card stat-materias">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-value" id="cntMaterias">—</div>
+            <div class="stat-label">Materias</div>
+          </div>
+          <i class="bi bi-journal-bookmark-fill stat-icon"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accesos rápidos -->
+  <div class="card">
+    <div class="card-header d-flex align-items-center">
+      <i class="bi bi-lightning-charge-fill text-warning me-2"></i>
+      <span class="fw-700">Accesos rápidos</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3" id="quickAccess"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(async () => {
+  // Fecha
+  document.getElementById('fechaActual').textContent =
+    new Date().toLocaleDateString('es-MX', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  const user = Auth.getUser();
+  const isAdminOrAdm = Auth.hasRole('ADMINISTRADOR','ADMINISTRATIVO');
+
+  // Cargar contadores solo si tiene permisos
+  if (isAdminOrAdm) {
+    const [ra, rd, rc, rm] = await Promise.all([
+      API.alumnos.list(), API.docentes.list(), API.carreras.list(), API.materias.list()
+    ]);
+    if (ra?.success) document.getElementById('cntAlumnos').textContent  = ra.data.length;
+    if (rd?.success) document.getElementById('cntDocentes').textContent = rd.data.length;
+    if (rc?.success) document.getElementById('cntCarreras').textContent = rc.data.length;
+    if (rm?.success) document.getElementById('cntMaterias').textContent = rm.data.length;
+  } else {
+    document.getElementById('statCards').style.display = 'none';
+  }
+
+  // Accesos rápidos según rol
+  const accesos = [];
+  if (isAdminOrAdm) {
+    accesos.push(
+      {icon:'bi-people', color:'#1a6fc4', label:'Alumnos',       href:'alumnos.html'},
+      {icon:'bi-person-badge', color:'#7c3aed', label:'Docentes', href:'docentes.html'},
+      {icon:'bi-diagram-3', color:'#059669', label:'Carreras',    href:'carreras.html'},
+      {icon:'bi-journal-bookmark', color:'#d97706', label:'Materias', href:'materias.html'},
+      {icon:'bi-clipboard2-check', color:'#0ea5e9', label:'Inscripciones', href:'inscripciones.html'},
+    );
+  }
+  if (Auth.hasRole('ADMINISTRADOR')) {
+    accesos.push({icon:'bi-person-gear', color:'#dc2626', label:'Usuarios', href:'usuarios.html'});
+  }
+  if (Auth.hasRole('ALUMNO')) {
+    accesos.push({icon:'bi-person-circle', color:'#1a6fc4', label:'Mi Perfil', href:'mi-perfil.html'});
+  }
+
+  const qc = document.getElementById('quickAccess');
+  qc.innerHTML = accesos.map(a => `
+    <div class="col-6 col-md-4 col-lg-2">
+      <a href="${a.href}" class="text-decoration-none">
+        <div class="text-center p-3 rounded-3 h-100 cursor-pointer" style="background:#f8f9fa;transition:all .2s;"
+             onmouseover="this.style.background='${a.color}11';this.style.transform='translateY(-3px)'"
+             onmouseout="this.style.background='#f8f9fa';this.style.transform=''">
+          <i class="bi ${a.icon}" style="font-size:1.8rem;color:${a.color};"></i>
+          <div style="font-size:.82rem;font-weight:700;color:#374151;margin-top:.5rem;">${a.label}</div>
+        </div>
+      </a>
+    </div>
+  `).join('');
+})();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

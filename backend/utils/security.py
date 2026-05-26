@@ -1,62 +1,31 @@
 import bcrypt
 import jwt
-
-from datetime import datetime, timedelta
-
-from config import SECRET_KEY
+from datetime import datetime, timedelta, timezone
+from config import JWT_SECRET_KEY, JWT_EXPIRATION_HOURS
 
 
-def hash_password(password):
-
-    password_bytes = password.encode('utf-8')
-
+def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
-
-    hashed = bcrypt.hashpw(password_bytes, salt)
-
-    return hashed.decode('utf-8')
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
 
-def verify_password(password, hashed_password):
-
-    password_bytes = password.encode('utf-8')
-    hashed_bytes = hashed_password.encode('utf-8')
-
-    return bcrypt.checkpw(password_bytes, hashed_bytes)
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
 
 
-def generate_token(user_data):
-
+def generate_token(user_data: dict) -> str:
     payload = {
         "id_usuario": user_data["id_usuario"],
         "usuario": user_data["usuario"],
         "roles": user_data["roles"],
-        "exp": datetime.utcnow() + timedelta(hours=8)
+        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS),
     }
-
-    token = jwt.encode(
-        payload,
-        SECRET_KEY,
-        algorithm="HS256"
-    )
-
-    return token
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
 
 
-def verify_token(token):
-
+def verify_token(token: str) -> dict | None:
     try:
-
-        payload = jwt.decode(
-            token,
-            SECRET_KEY,
-            algorithms=["HS256"]
-        )
-
-        return payload
-
-    except jwt.ExpiredSignatureError:
-        return None
-
-    except jwt.InvalidTokenError:
+        return jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         return None
