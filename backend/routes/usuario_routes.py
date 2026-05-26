@@ -6,6 +6,7 @@ from repositories.usuario_repo import (
 from utils.auth_decorators import require_auth, require_role
 from utils.responses import ok, created, error, not_found
 from utils.constants import ROL_ADMINISTRADOR
+from repositories.audit_repo import log_audit
 
 usuarios_bp = Blueprint("usuarios", __name__, url_prefix="/api/usuarios")
 
@@ -44,10 +45,13 @@ def crear_usuario(current_user):
             password=data["password"],
             roles=data["roles"],
         )
+        log_audit(current_user["id_usuario"], "CREAR_USUARIO", f"id_usuario={resultado.get('id_usuario')}")
         return created(data=resultado, message="Usuario creado correctamente")
     except Exception as e:
         if "UNIQUE" in str(e):
             return error("El nombre de usuario ya existe", 409)
+        if isinstance(e, ValueError):
+            return error(str(e), 400)
         return error(f"Error al crear usuario: {str(e)}")
 
 
@@ -58,6 +62,7 @@ def actualizar_usuario(current_user, id_usuario):
     data = request.get_json(silent=True) or {}
     if not update_usuario(id_usuario, data):
         return error("No se pudo actualizar el usuario (no existe o sin cambios)")
+    log_audit(current_user["id_usuario"], "ACTUALIZAR_USUARIO", f"id_usuario={id_usuario}")
     return ok(message="Usuario actualizado correctamente")
 
 
@@ -67,4 +72,5 @@ def actualizar_usuario(current_user, id_usuario):
 def eliminar_usuario(current_user, id_usuario):
     if not delete_usuario(id_usuario):
         return not_found("Usuario no encontrado")
+    log_audit(current_user["id_usuario"], "ELIMINAR_USUARIO", f"id_usuario={id_usuario}")
     return ok(message="Usuario eliminado correctamente")

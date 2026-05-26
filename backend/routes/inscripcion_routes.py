@@ -6,6 +6,8 @@ from repositories.inscripcion_repo import (
 from utils.auth_decorators import require_auth, require_role
 from utils.responses import ok, created, error, not_found
 from utils.constants import ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO
+from repositories.alumno_repo import get_alumno_by_usuario_id
+from repositories.audit_repo import log_audit
 
 inscripciones_bp = Blueprint("inscripciones", __name__, url_prefix="/api/inscripciones")
 
@@ -23,6 +25,10 @@ def listar_inscripciones(current_user):
 @require_auth
 @require_role(ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO, "ALUMNO", "DOCENTE")
 def inscripciones_de_alumno(current_user, id_alumno):
+    if "ALUMNO" in [r.upper() for r in current_user.get("roles", [])]:
+        alumno = get_alumno_by_usuario_id(current_user["id_usuario"])
+        if not alumno or alumno.id_alumno != id_alumno:
+            return error("Acceso denegado", 403)
     inscripciones = get_inscripciones_by_alumno(id_alumno)
     return ok(data=[i.to_dict() for i in inscripciones])
 
@@ -41,10 +47,13 @@ def crear_inscripcion(current_user):
             id_materia=data["id_materia"],
             id_periodo=data["id_periodo"],
         )
+        log_audit(current_user["id_usuario"], "CREAR_INSCRIPCION", f"id_inscripcion={resultado.get('id_inscripcion')}")
         return created(data=resultado, message="Inscripción creada correctamente")
     except Exception as e:
         if "UNIQUE" in str(e):
             return error("El alumno ya está inscrito en esa materia en ese periodo", 409)
+        if isinstance(e, ValueError):
+            return error(str(e), 400)
         return error(f"Error al crear inscripción: {str(e)}")
 
 
@@ -56,8 +65,12 @@ def cambiar_estado(current_user, id_inscripcion):
     estado = data.get("estado", "")
     if not estado:
         return error("El campo 'estado' es requerido")
-    if not update_estado_inscripcion(id_inscripcion, estado):
-        return error("Estado inválido o inscripción no encontrada")
+    try:
+        if not update_estado_inscripcion(id_inscripcion, estado):
+            return error("Estado inválido o inscripción no encontrada")
+    except ValueError as e:
+        return error(str(e), 400)
+    log_audit(current_user["id_usuario"], "CAMBIAR_ESTADO_INSCRIPCION", f"id_inscripcion={id_inscripcion}, estado={estado}")
     return ok(message="Estado actualizado correctamente")
 
 
@@ -67,4 +80,5 @@ def cambiar_estado(current_user, id_inscripcion):
 def eliminar_inscripcion(current_user, id_inscripcion):
     if not delete_inscripcion(id_inscripcion):
         return not_found("Inscripción no encontrada")
+    log_audit(current_user["id_usuario"], "ELIMINAR_INSCRIPCION", f"id_inscripcion={id_inscripcion}")
     return ok(message="Inscripción eliminada correctamente")

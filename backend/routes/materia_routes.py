@@ -6,6 +6,7 @@ from repositories.materia_repo import (
 from utils.auth_decorators import require_auth, require_role
 from utils.responses import ok, created, error, not_found
 from utils.constants import ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO
+from repositories.audit_repo import log_audit
 
 materias_bp = Blueprint("materias", __name__, url_prefix="/api/materias")
 
@@ -45,6 +46,7 @@ def crear_materia(current_user):
             semestre=data["semestre"],
             cupo=data["cupo"],
         )
+        log_audit(current_user["id_usuario"], "CREAR_MATERIA", f"id_materia={resultado.get('id_materia')}")
         return created(data=resultado, message="Materia creada correctamente")
     except Exception as e:
         if "UNIQUE" in str(e):
@@ -59,6 +61,7 @@ def actualizar_materia(current_user, id_materia):
     data = request.get_json(silent=True) or {}
     if not update_materia(id_materia, data):
         return error("No se pudo actualizar (no existe o sin cambios)")
+    log_audit(current_user["id_usuario"], "ACTUALIZAR_MATERIA", f"id_materia={id_materia}")
     return ok(message="Materia actualizada correctamente")
 
 
@@ -68,4 +71,5 @@ def actualizar_materia(current_user, id_materia):
 def eliminar_materia(current_user, id_materia):
     if not delete_materia(id_materia):
         return not_found("Materia no encontrada")
+    log_audit(current_user["id_usuario"], "ELIMINAR_MATERIA", f"id_materia={id_materia}")
     return ok(message="Materia eliminada correctamente")

@@ -6,6 +6,7 @@ from repositories.carrera_repo import (
 from utils.auth_decorators import require_auth, require_role
 from utils.responses import ok, created, error, not_found
 from utils.constants import ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO
+from repositories.audit_repo import log_audit
 
 carreras_bp = Blueprint("carreras", __name__, url_prefix="/api/carreras")
 
@@ -36,6 +37,7 @@ def crear_carrera(current_user):
         return error("El campo 'nombre' es requerido")
     try:
         resultado = create_carrera(nombre=data["nombre"])
+        log_audit(current_user["id_usuario"], "CREAR_CARRERA", f"id_carrera={resultado.get('id_carrera')}")
         return created(data=resultado, message="Carrera creada correctamente")
     except Exception as e:
         return error(f"Error al crear carrera: {str(e)}")
@@ -48,6 +50,7 @@ def actualizar_carrera(current_user, id_carrera):
     data = request.get_json(silent=True) or {}
     if not update_carrera(id_carrera, data):
         return error("No se pudo actualizar (no existe o sin cambios)")
+    log_audit(current_user["id_usuario"], "ACTUALIZAR_CARRERA", f"id_carrera={id_carrera}")
     return ok(message="Carrera actualizada correctamente")
 
 
@@ -57,4 +60,5 @@ def actualizar_carrera(current_user, id_carrera):
 def eliminar_carrera(current_user, id_carrera):
     if not delete_carrera(id_carrera):
         return not_found("Carrera no encontrada")
+    log_audit(current_user["id_usuario"], "ELIMINAR_CARRERA", f"id_carrera={id_carrera}")
     return ok(message="Carrera eliminada correctamente")

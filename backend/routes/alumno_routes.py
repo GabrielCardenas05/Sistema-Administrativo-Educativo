@@ -1,8 +1,9 @@
 from flask import Blueprint, request
 from repositories.alumno_repo import (
     get_all_alumnos, get_alumno_by_id,
-    create_alumno, update_alumno, delete_alumno
+    get_alumno_by_usuario_id, create_alumno, update_alumno, delete_alumno
 )
+from repositories.audit_repo import log_audit
 from utils.auth_decorators import require_auth, require_role
 from utils.responses import ok, created, error, not_found
 from utils.constants import ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO, ROL_DOCENTE
@@ -33,25 +34,9 @@ def obtener_alumno(current_user, id_alumno):
 @require_role("ALUMNO")
 def mi_perfil(current_user):
     """Un alumno puede ver su propio perfil."""
-    from repositories.alumno_repo import get_alumno_by_id
-    from repositories.usuario_repo import get_usuario_by_username
-    usuario = get_usuario_by_username(current_user["usuario"])
-    if not usuario:
-        return not_found("Usuario no encontrado")
-    # Buscar alumno asociado al usuario
-    from database import get_connection
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id_alumno, id_usuario, matricula, nombre, curp, id_carrera, semestre, estatus
-        FROM alumnos WHERE id_usuario = ?
-    """, (usuario.id_usuario,))
-    row = cursor.fetchone()
-    conn.close()
-    if not row:
+    alumno = get_alumno_by_usuario_id(current_user["id_usuario"])
+    if not alumno:
         return not_found("Perfil de alumno no encontrado")
-    from models.alumno import Alumno
-    alumno = Alumno(*row)
     return ok(data=alumno.to_dict())
 
 
@@ -74,6 +59,7 @@ def crear_alumno(current_user):
             id_carrera=data["id_carrera"],
             semestre=data["semestre"],
         )
+        log_audit(current_user["id_usuario"], "CREAR_ALUMNO", f"id_alumno={resultado.get('id_alumno')}")
         return created(data=resultado, message="Alumno creado correctamente")
     except Exception as e:
         if "UNIQUE" in str(e):
@@ -88,6 +74,7 @@ def actualizar_alumno(current_user, id_alumno):
     data = request.get_json(silent=True) or {}
     if not update_alumno(id_alumno, data):
         return error("No se pudo actualizar (no existe o sin cambios)")
+    log_audit(current_user["id_usuario"], "ACTUALIZAR_ALUMNO", f"id_alumno={id_alumno}")
     return ok(message="Alumno actualizado correctamente")
 
 
@@ -97,4 +84,5 @@ def actualizar_alumno(current_user, id_alumno):
 def eliminar_alumno(current_user, id_alumno):
     if not delete_alumno(id_alumno):
         return not_found("Alumno no encontrado")
+    log_audit(current_user["id_usuario"], "ELIMINAR_ALUMNO", f"id_alumno={id_alumno}")
     return ok(message="Alumno eliminado correctamente")

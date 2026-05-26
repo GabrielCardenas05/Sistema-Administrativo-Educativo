@@ -41,6 +41,18 @@ def get_alumno_by_id(id_alumno: int) -> Alumno | None:
     return _row_to_alumno(row) if row else None
 
 
+def get_alumno_by_usuario_id(id_usuario: int) -> Alumno | None:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id_alumno, id_usuario, matricula, nombre, curp, id_carrera, semestre, estatus
+        FROM alumnos WHERE id_usuario = ?
+    """, (id_usuario,))
+    row = cursor.fetchone()
+    conn.close()
+    return _row_to_alumno(row) if row else None
+
+
 def get_alumno_by_matricula(matricula: str) -> Alumno | None:
     conn = get_connection()
     cursor = conn.cursor()

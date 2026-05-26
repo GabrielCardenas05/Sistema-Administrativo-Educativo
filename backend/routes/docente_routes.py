@@ -6,6 +6,7 @@ from repositories.docente_repo import (
 from utils.auth_decorators import require_auth, require_role
 from utils.responses import ok, created, error, not_found
 from utils.constants import ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO
+from repositories.audit_repo import log_audit
 
 docentes_bp = Blueprint("docentes", __name__, url_prefix="/api/docentes")
 
@@ -42,6 +43,7 @@ def crear_docente(current_user):
             nombre=data["nombre"],
             especialidad=data.get("especialidad"),
         )
+        log_audit(current_user["id_usuario"], "CREAR_DOCENTE", f"id_docente={resultado.get('id_docente')}")
         return created(data=resultado, message="Docente creado correctamente")
     except Exception as e:
         if "UNIQUE" in str(e):
@@ -56,6 +58,7 @@ def actualizar_docente(current_user, id_docente):
     data = request.get_json(silent=True) or {}
     if not update_docente(id_docente, data):
         return error("No se pudo actualizar (no existe o sin cambios)")
+    log_audit(current_user["id_usuario"], "ACTUALIZAR_DOCENTE", f"id_docente={id_docente}")
     return ok(message="Docente actualizado correctamente")
 
 
@@ -65,4 +68,5 @@ def actualizar_docente(current_user, id_docente):
 def eliminar_docente(current_user, id_docente):
     if not delete_docente(id_docente):
         return not_found("Docente no encontrado")
+    log_audit(current_user["id_usuario"], "ELIMINAR_DOCENTE", f"id_docente={id_docente}")
     return ok(message="Docente eliminado correctamente")

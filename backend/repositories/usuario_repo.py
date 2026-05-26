@@ -53,33 +53,49 @@ def create_usuario(usuario: str, password: str, roles: list[str]) -> dict:
     conn = get_connection()
     cursor = conn.cursor()
 
-    password_hashed = hash_password(password)
+    normalized_roles = [str(r).upper() for r in roles]
+    if not normalized_roles:
+        conn.close()
+        raise ValueError("Debe asignarse al menos un rol")
 
-    # Insertar usuario
+    placeholders = ",".join("?" for _ in normalized_roles)
     cursor.execute(
-        """
-        INSERT INTO usuarios (usuario, password_hash, activo, created_at, updated_at)
-        OUTPUT INSERTED.id_usuario
-        VALUES (?, ?, 1, GETDATE(), GETDATE())
-        """,
-        (usuario, password_hashed)
+        f"SELECT id_rol, UPPER(nombre) FROM roles WHERE UPPER(nombre) IN ({placeholders})",
+        normalized_roles,
     )
-    row = cursor.fetchone()
-    id_usuario = row[0]
+    role_rows = cursor.fetchall()
+    role_map = {row[1]: row[0] for row in role_rows}
+    missing_roles = sorted(set(normalized_roles) - set(role_map))
+    if missing_roles:
+        conn.close()
+        raise ValueError(f"Roles invalidos: {', '.join(missing_roles)}")
 
-    # Asignar roles
-    for nombre_rol in roles:
-        cursor.execute("SELECT id_rol FROM roles WHERE UPPER(nombre) = UPPER(?)", (nombre_rol,))
-        rol = cursor.fetchone()
-        if rol:
+    try:
+        password_hashed = hash_password(password)
+        cursor.execute(
+            """
+            INSERT INTO usuarios (usuario, password_hash, activo, created_at, updated_at)
+            OUTPUT INSERTED.id_usuario
+            VALUES (?, ?, 1, GETDATE(), GETDATE())
+            """,
+            (usuario, password_hashed)
+        )
+        row = cursor.fetchone()
+        id_usuario = row[0]
+
+        for nombre_rol in normalized_roles:
             cursor.execute(
                 "INSERT INTO Usuario_Rol (id_usuario, id_rol) VALUES (?, ?)",
-                (id_usuario, rol[0])
+                (id_usuario, role_map[nombre_rol])
             )
 
-    conn.commit()
-    conn.close()
-    return {"id_usuario": id_usuario, "usuario": usuario}
+        conn.commit()
+        return {"id_usuario": id_usuario, "usuario": usuario}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def update_usuario(id_usuario: int, data: dict) -> bool:

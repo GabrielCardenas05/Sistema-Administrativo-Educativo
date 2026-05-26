@@ -132,6 +132,35 @@ IF NOT EXISTS (SELECT 1 FROM roles WHERE UPPER(nombre) = 'ALUMNO')
 PRINT 'Roles base verificados/insertados.';
 GO
 
+-- PASO 8: Crear tabla de auditoria si no existe
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'logs_auditoria')
+BEGIN
+    CREATE TABLE logs_auditoria (
+        id_log INT IDENTITY(1,1) PRIMARY KEY,
+        id_usuario INT NOT NULL,
+        accion VARCHAR(100) NOT NULL,
+        descripcion VARCHAR(MAX),
+        fecha DATETIME DEFAULT GETDATE(),
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+    );
+    PRINT 'Tabla logs_auditoria creada.';
+END
+ELSE
+    PRINT 'Tabla logs_auditoria ya existe.';
+GO
+
+-- PASO 9: Indice de apoyo para reglas de inscripcion
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE object_id = OBJECT_ID('inscripciones') AND name = 'IX_inscripciones_materia_estado'
+)
+BEGIN
+    CREATE INDEX IX_inscripciones_materia_estado
+    ON inscripciones (id_materia, estado);
+    PRINT 'Indice IX_inscripciones_materia_estado creado.';
+END
+GO
+
 -- ────────────────────────────────────────────────────────────
 -- Verificación final
 -- ────────────────────────────────────────────────────────────

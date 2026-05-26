@@ -5,6 +5,7 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from flask import Flask, jsonify
+from flask_cors import CORS
 from routes.auth_routes import auth_bp
 from routes.usuario_routes import usuarios_bp
 from routes.alumno_routes import alumnos_bp
@@ -14,6 +15,7 @@ from routes.materia_routes import materias_bp
 from routes.inscripcion_routes import inscripciones_bp
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # ── Registrar Blueprints ───────────────────────────────────────────────────────
 app.register_blueprint(auth_bp)
@@ -61,4 +63,5 @@ def list_routes():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    debug = os.getenv("FLASK_DEBUG", "0").lower() in {"1", "true", "yes"}
+    app.run(debug=debug, host=os.getenv("FLASK_HOST", "127.0.0.1"), port=5000)
