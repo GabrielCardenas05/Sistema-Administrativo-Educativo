@@ -22,7 +22,7 @@
 <script src="../js/ui.js"></script>
 <script src="../js/layout.js"></script>
 <script>
-  if(!Auth.guardPage('ADMINISTRADOR','ADMINISTRATIVO')) throw new Error();
+  if(!Auth.guardPage('ADMINISTRADOR','ADMINISTRATIVO','DOCENTE','ALUMNO')) throw new Error();
   Layout.init('inscripciones');
   Layout.setBreadcrumb([{label:'Inscripciones'}]);
 </script>
@@ -32,7 +32,7 @@
     <h4 class="section-title mb-0"><i class="bi bi-clipboard2-check me-2" style="color:#0ea5e9;"></i>Inscripciones</h4>
     <p class="text-muted mb-0" style="font-size:.88rem;">Control de inscripciones de alumnos</p>
   </div>
-  <button class="btn btn-primary btn-sm px-3" onclick="abrirModal()">
+  <button class="btn btn-primary btn-sm px-3" id="btnNuevaInscripcion" onclick="abrirModal()">
     <i class="bi bi-plus-lg me-1"></i> Nueva Inscripción
   </button>
 </div>
@@ -64,10 +64,10 @@
     <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="table-light">
-          <tr><th>#</th><th>Alumno</th><th>Materia</th><th>Periodo</th><th>Estado</th><th>Fecha</th><th class="text-end">Acciones</th></tr>
+          <tr><th>#</th><th>Alumno</th><th>Materia</th><th>Horario</th><th>Periodo</th><th>Estado</th><th>Fecha</th><th class="text-end" id="thAcciones">Acciones</th></tr>
         </thead>
         <tbody id="tbodyInscripciones">
-          <tr><td colspan="7" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+          <tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -149,13 +149,38 @@
 <script>
 let inscripciones = [], alumnos = [], materias = [];
 let bsModal, bsEstadoModal;
+const canManage = Auth.hasRole('ADMINISTRADOR','ADMINISTRATIVO');
+const isAlumno = Auth.hasRole('ALUMNO');
+const isDocente = Auth.hasRole('DOCENTE');
+
+if (!canManage) {
+  document.getElementById('btnNuevaInscripcion').style.display = 'none';
+  document.getElementById('thAcciones').style.display = 'none';
+}
 
 async function cargarDatos() {
-  [inscripciones, alumnos, materias] = await Promise.all([
-    API.inscripciones.list().then(r => r?.data || []),
-    API.alumnos.list().then(r => r?.data || []),
-    API.materias.list().then(r => r?.data || []),
-  ]);
+  materias = await API.materias.list().then(r => r?.data || []);
+
+  if (canManage) {
+    [inscripciones, alumnos] = await Promise.all([
+      API.inscripciones.list().then(r => r?.data || []),
+      API.alumnos.list().then(r => r?.data || []),
+    ]);
+  } else if (isAlumno) {
+    const rPerfil = await API.alumnos.me();
+    const perfil = rPerfil?.success ? rPerfil.data : null;
+    alumnos = perfil ? [perfil] : [];
+    inscripciones = perfil
+      ? await API.inscripciones.byAlumno(perfil.id_alumno).then(r => r?.data || [])
+      : [];
+  } else if (isDocente) {
+    alumnos = await API.alumnos.list().then(r => r?.data || []);
+    const grupos = await Promise.all(
+      alumnos.map(a => API.inscripciones.byAlumno(a.id_alumno).then(r => r?.data || []))
+    );
+    inscripciones = grupos.flat();
+  }
+
   document.getElementById('sel_alumno').innerHTML = '<option value="">— Seleccionar alumno —</option>' +
     alumnos.map(a => `<option value="${a.id_alumno}">${a.nombre} (${a.matricula})</option>`).join('');
   document.getElementById('sel_materia').innerHTML = '<option value="">— Seleccionar materia —</option>' +
@@ -175,11 +200,18 @@ function aplicarFiltros() {
   renderInscripciones(filtradas);
 }
 
+function formatHorario(materia) {
+  if (!materia) return 'No registrado';
+  const dia = materia.dia || materia.dia_semana || materia.dias;
+  const hora = [materia.hora_inicio, materia.hora_fin].filter(Boolean).join(' - ');
+  return [dia, hora].filter(Boolean).join(' · ') || 'No registrado';
+}
+
 function renderInscripciones(data) {
   document.getElementById('totalLabel').textContent = `${data.length} registros`;
   const tbody = document.getElementById('tbodyInscripciones');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5"><i class="bi bi-clipboard2-x" style="font-size:2rem;display:block;"></i>Sin inscripciones</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="${canManage ? 8 : 7}" class="text-center text-muted py-5"><i class="bi bi-clipboard2-x" style="font-size:2rem;display:block;"></i>Sin inscripciones</td></tr>`;
     return;
   }
   const colorEstado = {PENDIENTE:'bg-warning text-dark',ACTIVA:'bg-success',BAJA:'bg-danger',FINALIZADA:'bg-secondary'};
@@ -187,17 +219,19 @@ function renderInscripciones(data) {
     const al = alumnos.find(a => a.id_alumno === i.id_alumno);
     const ma = materias.find(m => m.id_materia === i.id_materia);
     const fecha = i.fecha_inscripcion ? new Date(i.fecha_inscripcion).toLocaleDateString('es-MX') : '—';
+    const horario = formatHorario(ma);
     return `<tr>
       <td class="text-muted">${i.id_inscripcion}</td>
       <td><span class="fw-600">${al?.nombre || '—'}</span><br><small class="text-muted">${al?.matricula || ''}</small></td>
       <td>${ma?.nombre || '—'}<br><small class="text-muted">${ma?.clave || ''}</small></td>
+      <td><small class="${horario === 'No registrado' ? 'text-muted' : ''}">${horario}</small></td>
       <td class="text-center">${i.id_periodo}</td>
       <td><span class="badge ${colorEstado[i.estado] || 'bg-secondary'}">${i.estado}</span></td>
       <td><small>${fecha}</small></td>
-      <td class="text-end">
+      ${canManage ? `<td class="text-end">
         <button class="btn btn-outline-secondary btn-action me-1" onclick="abrirModalEstado(${i.id_inscripcion}, '${i.estado}')" title="Cambiar estado"><i class="bi bi-arrow-repeat"></i></button>
         <button class="btn btn-outline-danger btn-action" onclick="eliminarInscripcion(${i.id_inscripcion})" title="Eliminar"><i class="bi bi-trash"></i></button>
-      </td>
+      </td>` : ''}
     </tr>`;
   }).join('');
 }
@@ -207,6 +241,7 @@ function renderInscripciones(data) {
 );
 
 function abrirModal() {
+  if (!canManage) return;
   document.getElementById('sel_alumno').value = '';
   document.getElementById('sel_materia').value = '';
   document.getElementById('id_periodo').value = '';
@@ -215,6 +250,7 @@ function abrirModal() {
 }
 
 async function guardarInscripcion() {
+  if (!canManage) return;
   const data = {
     id_alumno:  parseInt(document.getElementById('sel_alumno').value) || null,
     id_materia: parseInt(document.getElementById('sel_materia').value) || null,
@@ -231,6 +267,7 @@ async function guardarInscripcion() {
 }
 
 function abrirModalEstado(id, estado) {
+  if (!canManage) return;
   document.getElementById('estadoInscId').value = id;
   document.getElementById('nuevoEstado').value  = estado;
   if (!bsEstadoModal) bsEstadoModal = new bootstrap.Modal(document.getElementById('modalEstado'));
@@ -238,6 +275,7 @@ function abrirModalEstado(id, estado) {
 }
 
 async function cambiarEstado() {
+  if (!canManage) return;
   const id     = document.getElementById('estadoInscId').value;
   const estado = document.getElementById('nuevoEstado').value;
   const res    = await API.inscripciones.estado(id, estado);
@@ -246,6 +284,7 @@ async function cambiarEstado() {
 }
 
 async function eliminarInscripcion(id) {
+  if (!canManage) return;
   const ok = await confirmDialog('¿Eliminar esta inscripción?');
   if (!ok) return;
   const res = await API.inscripciones.delete(id);

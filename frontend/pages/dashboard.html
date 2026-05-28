@@ -137,10 +137,6 @@
   if (Auth.hasRole('ADMINISTRADOR')) {
     accesos.push({icon:'bi-person-gear', color:'#dc2626', label:'Usuarios', href:'usuarios.html'});
   }
-  if (Auth.hasRole('ALUMNO')) {
-    accesos.push({icon:'bi-person-circle', color:'#1a6fc4', label:'Mi Perfil', href:'mi-perfil.html'});
-  }
-
   const renderRoleStats = (cards) => {
     const statCards = document.getElementById('statCards');
     statCards.style.display = '';
@@ -172,6 +168,7 @@
     ]);
     accesos.push(
       {icon:'bi-people', color:'#1a6fc4', label:'Alumnos', href:'alumnos.html'},
+      {icon:'bi-clipboard2-check', color:'#0ea5e9', label:'Inscripciones', href:'inscripciones.html'},
       {icon:'bi-journal-bookmark', color:'#d97706', label:'Materias', href:'materias.html'},
     );
   }
@@ -198,7 +195,11 @@
         {className:'stat-materias', value:'-', label:'Materias', icon:'bi-journal-bookmark-fill'},
       ]);
     }
-    accesos.push({icon:'bi-journal-bookmark', color:'#d97706', label:'Materias', href:'materias.html'});
+    accesos.push(
+      {icon:'bi-person-circle', color:'#1a6fc4', label:'Mi Perfil', href:'mi-perfil.html'},
+      {icon:'bi-clipboard2-check', color:'#0ea5e9', label:'Inscripciones', href:'inscripciones.html'},
+      {icon:'bi-journal-bookmark', color:'#d97706', label:'Materias', href:'materias.html'},
+    );
   }
 
   const qc = document.getElementById('quickAccess');

@@ -105,6 +105,11 @@ const Layout = {
                 </a>
               </li>
               <li class="nav-item">
+                <a class="nav-link" data-page="inscripciones" href="inscripciones.html">
+                  <i class="bi bi-clipboard2-check me-2"></i> Inscripciones
+                </a>
+              </li>
+              <li class="nav-item">
                 <a class="nav-link" data-page="materias" href="materias.html">
                   <i class="bi bi-journal-bookmark me-2"></i> Materias
                 </a>
@@ -116,6 +121,11 @@ const Layout = {
               <li class="nav-item">
                 <a class="nav-link" data-page="mi-perfil" href="mi-perfil.html">
                   <i class="bi bi-person-circle me-2"></i> Mi Perfil
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-page="inscripciones" href="inscripciones.html">
+                  <i class="bi bi-clipboard2-check me-2"></i> Inscripciones
                 </a>
               </li>
               <li class="nav-item">

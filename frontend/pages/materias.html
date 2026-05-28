@@ -52,7 +52,16 @@
       <div class="col-md-2">
         <select class="form-select form-select-sm" id="filtroSemestre">
           <option value="">Todos los semestres</option>
-          ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}° semestre</option>`).join('')}
+          <option value="1">1° semestre</option>
+          <option value="2">2° semestre</option>
+          <option value="3">3° semestre</option>
+          <option value="4">4° semestre</option>
+          <option value="5">5° semestre</option>
+          <option value="6">6° semestre</option>
+          <option value="7">7° semestre</option>
+          <option value="8">8° semestre</option>
+          <option value="9">9° semestre</option>
+          <option value="10">10° semestre</option>
         </select>
       </div>
       <div class="col-md-3 text-end">
@@ -67,10 +76,10 @@
     <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="table-light">
-          <tr><th>Clave</th><th>Nombre</th><th>Carrera</th><th>Semestre</th><th>Cupo</th><th>Estado</th><th class="text-end" id="thAcciones">Acciones</th></tr>
+          <tr><th>Clave</th><th>Nombre</th><th>Carrera</th><th>Semestre</th><th>Horario</th><th>Cupo</th><th>Estado</th><th class="text-end" id="thAcciones">Acciones</th></tr>
         </thead>
         <tbody id="tbodyMaterias">
-          <tr><td colspan="7" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+          <tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -105,7 +114,16 @@
             <label class="form-label fw-600">Semestre *</label>
             <select class="form-select" id="semestre">
               <option value="">—</option>
-              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}°</option>`).join('')}
+              <option value="1">1°</option>
+              <option value="2">2°</option>
+              <option value="3">3°</option>
+              <option value="4">4°</option>
+              <option value="5">5°</option>
+              <option value="6">6°</option>
+              <option value="7">7°</option>
+              <option value="8">8°</option>
+              <option value="9">9°</option>
+              <option value="10">10°</option>
             </select>
           </div>
           <div class="col-md-3">
@@ -193,20 +211,28 @@ function aplicarFiltros() {
   renderMaterias(filtradas);
 }
 
+function formatHorario(materia) {
+  const dia = materia.dia || materia.dia_semana || materia.dias;
+  const hora = [materia.hora_inicio, materia.hora_fin].filter(Boolean).join(' - ');
+  return [dia, hora].filter(Boolean).join(' · ') || 'No registrado';
+}
+
 function renderMaterias(data) {
   document.getElementById('totalLabel').textContent = `${data.length} registros`;
   const tbody = document.getElementById('tbodyMaterias');
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="${canEdit ? 7 : 6}" class="text-center text-muted py-5"><i class="bi bi-journal-bookmark" style="font-size:2rem;display:block;"></i>Sin materias</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${canEdit ? 8 : 7}" class="text-center text-muted py-5"><i class="bi bi-journal-bookmark" style="font-size:2rem;display:block;"></i>Sin materias</td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(m => {
     const carrera = carreras.find(c => c.id_carrera === m.id_carrera);
+    const horario = formatHorario(m);
     return `<tr>
       <td><span class="badge bg-warning text-dark fw-600">${m.clave}</span></td>
       <td><span class="fw-600">${m.nombre}</span></td>
       <td><small class="text-muted">${carrera?.nombre || '—'}</small></td>
       <td class="text-center">${m.semestre}°</td>
+      <td><small class="${horario === 'No registrado' ? 'text-muted' : ''}">${horario}</small></td>
       <td class="text-center">${m.cupo}</td>
       <td><span class="badge ${m.activa ? 'bg-success' : 'bg-secondary'}">${m.activa ? 'Activa' : 'Inactiva'}</span></td>
       ${canEdit ? `<td class="text-end">
