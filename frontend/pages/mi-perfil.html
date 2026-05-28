@@ -60,6 +60,11 @@
 
   const user = Auth.getUser();
   const inicial = (alumno.nombre || user.usuario).charAt(0).toUpperCase();
+  const formatPago = (i) => {
+    if (!i.estado_pago) return '<span class="badge bg-secondary">Sin registro</span>';
+    const color = {PAGADO:'bg-success',PENDIENTE:'bg-warning text-dark',RECHAZADO:'bg-danger'}[i.estado_pago] || 'bg-secondary';
+    return `<span class="badge ${color}">${i.estado_pago}</span>`;
+  };
 
   div.innerHTML = `
     <div class="row g-4">
@@ -104,7 +109,7 @@
               : `<div class="table-responsive">
                   <table class="table table-hover mb-0">
                     <thead class="table-light">
-                      <tr><th>Materia</th><th>Periodo</th><th>Estado</th><th>Fecha</th></tr>
+                      <tr><th>Materia</th><th>Periodo</th><th>Estado</th><th>Pago</th><th>Fecha</th></tr>
                     </thead>
                     <tbody>
                       ${inscripciones.map(i => {
@@ -114,6 +119,7 @@
                           <td><span class="fw-600">Materia #${i.id_materia}</span></td>
                           <td>${i.id_periodo}</td>
                           <td><span class="badge ${colorEstado[i.estado]||'bg-secondary'}">${i.estado}</span></td>
+                          <td>${formatPago(i)}</td>
                           <td><small>${fecha}</small></td>
                         </tr>`;
                       }).join('')}

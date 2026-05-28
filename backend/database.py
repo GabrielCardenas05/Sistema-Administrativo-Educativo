@@ -1,8 +1,11 @@
 import pyodbc
+import os
 from config import (
     DB_DRIVER, DB_SERVER, DB_DATABASE,
     DB_TRUSTED_CONNECTION, DB_USER, DB_PASSWORD
 )
+
+pyodbc.pooling = True
 
 
 def get_connection():
@@ -26,4 +29,5 @@ def get_connection():
             f"PWD={DB_PASSWORD};"
         )
 
-    return pyodbc.connect(conn_str)
+    timeout = int(os.getenv("DB_TIMEOUT_SECONDS", "5"))
+    return pyodbc.connect(conn_str, timeout=timeout)

@@ -5,7 +5,7 @@ from repositories.inscripcion_repo import (
 )
 from utils.auth_decorators import require_auth, require_role
 from utils.responses import ok, created, error, not_found
-from utils.constants import ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO
+from utils.constants import ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO, ROL_DOCENTE
 from repositories.alumno_repo import get_alumno_by_usuario_id
 from repositories.audit_repo import log_audit
 
@@ -14,7 +14,7 @@ inscripciones_bp = Blueprint("inscripciones", __name__, url_prefix="/api/inscrip
 
 @inscripciones_bp.route("/", methods=["GET"])
 @require_auth
-@require_role(ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO)
+@require_role(ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO, ROL_DOCENTE)
 def listar_inscripciones(current_user):
     id_periodo = request.args.get("id_periodo", type=int)
     inscripciones = get_all_inscripciones(id_periodo=id_periodo)

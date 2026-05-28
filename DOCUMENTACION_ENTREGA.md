@@ -17,11 +17,14 @@ El proyecto queda listo para presentacion funcional con los siguientes puntos cu
 - Gestion de carreras.
 - Gestion de materias.
 - Gestion de inscripciones.
+- Consulta de pagos asociados a inscripciones.
+- Tickets de soporte para errores del sistema, materias incorrectas y pagos no reflejados.
 - Gestion de usuarios.
 - Validaciones de negocio para inscripciones.
 - Auditoria basica de acciones administrativas.
 - Scripts SQL para crear, actualizar y poblar la base de datos.
 - Frontend con dashboard y navegacion por modulos.
+- Conexion a BD con pooling de pyodbc y timeout configurable.
 
 ## Estructura del proyecto
 
@@ -68,6 +71,7 @@ DB_SERVER=localhost
 DB_NAME=SistemaAdministrativoEducativo
 DB_USER=sa
 DB_PASSWORD=tu_password
+DB_TIMEOUT_SECONDS=5
 JWT_SECRET_KEY=tu_llave_secreta
 FLASK_DEBUG=0
 FLASK_HOST=127.0.0.1
@@ -150,6 +154,7 @@ http://localhost:8000
 - Carreras: administracion de carreras.
 - Materias: administracion de materias, cupos, semestre y carrera.
 - Inscripciones: registro y control de materias inscritas por alumno.
+- Tickets: reportes de pagos no reflejados, materias incorrectas y errores del sistema.
 - Usuarios: administracion de cuentas y roles.
 - Mi Perfil: vista orientada al alumno.
 
@@ -176,6 +181,22 @@ En auditoria:
 - Se registran acciones administrativas sobre alumnos, docentes, carreras, materias, inscripciones y usuarios.
 - La auditoria es de apoyo para trazabilidad y no bloquea la operacion principal si ocurre un error al registrar el log.
 
+En tickets:
+
+- Los usuarios autenticados pueden generar tickets de soporte.
+- Los alumnos solo pueden reportar inscripciones que les pertenecen.
+- Los administradores y administrativos pueden ver todos los tickets y cambiar su estatus.
+- Los reportes contemplan pago no reflejado, materia incorrecta, error del sistema u otro problema.
+
+En concurrencia y carga:
+
+- El sistema usa JWT sin estado de sesion en servidor, por lo que cada peticion se valida con el token del usuario actual.
+- Las consultas usan parametros SQL, no concatenacion de datos del usuario.
+- Las vistas de alumno consultan su perfil por `id_usuario` del token y no por datos enviados desde el navegador.
+- La vista de docente usa una consulta general de inscripciones en lugar de una llamada por cada alumno.
+- La conexion a SQL Server usa pooling de pyodbc y timeout configurable con `DB_TIMEOUT_SECONDS`.
+- Para una entrega productiva se recomienda ejecutar Flask detras de un servidor WSGI y no con el servidor de desarrollo.
+
 ## Relacion con los problemas originales
 
 | Problema original | Respuesta del sistema |
@@ -188,6 +209,8 @@ En auditoria:
 | Cupos incorrectos | Validacion de cupo antes de confirmar inscripcion |
 | Datos inconsistentes | Llaves foraneas y validaciones de negocio |
 | Sin trazabilidad | Tabla de logs de auditoria |
+| Pago no reflejado | Estado de pagos en inscripciones y tickets de soporte |
+| Errores reportados por usuarios | Modulo de tickets con seguimiento de estatus |
 
 ## Notas para presentacion
 

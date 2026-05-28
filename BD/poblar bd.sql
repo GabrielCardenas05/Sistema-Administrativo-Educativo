@@ -160,4 +160,51 @@ GO
 
 SELECT 'Usuarios demo creados. Password para todos: Admin123' AS Resultado;
 SELECT usuario FROM usuarios WHERE usuario IN ('Admin','ControlEscolar','Docente1','Docente2','Alumno1','Alumno2','Alumno3','Alumno4','Alumno5');
+
+-- Pagos de ejemplo para demostracion
+INSERT INTO pagos (id_inscripcion, monto, estado, fecha_pago)
+SELECT i.id_inscripcion, v.monto, v.estado, v.fecha_pago
+FROM (VALUES
+    ('2026001', 'SIS101', 1500.00, 'PAGADO', GETDATE()),
+    ('2026001', 'MAT101', 1500.00, 'PENDIENTE', NULL),
+    ('2026002', 'SIS101', 1500.00, 'PENDIENTE', NULL),
+    ('2026004', 'SIS101', 1500.00, 'PAGADO', GETDATE())
+) v(matricula, clave, monto, estado, fecha_pago)
+JOIN alumnos a ON a.matricula = v.matricula
+JOIN materias m ON m.clave = v.clave
+JOIN inscripciones i ON i.id_alumno = a.id_alumno AND i.id_materia = m.id_materia
+WHERE NOT EXISTS (
+    SELECT 1 FROM pagos p
+    WHERE p.id_inscripcion = i.id_inscripcion
+);
+GO
+
+-- Ticket de ejemplo: pago no reflejado
+IF NOT EXISTS (
+    SELECT 1 FROM tickets_soporte
+    WHERE tipo = 'PAGO_NO_REFLEJADO'
+      AND titulo = 'Pago pendiente de validacion'
+)
+BEGIN
+    INSERT INTO tickets_soporte (
+        id_usuario, tipo, titulo, descripcion, estatus,
+        prioridad, id_inscripcion, fecha_creacion, fecha_actualizacion
+    )
+    SELECT
+        u.id_usuario,
+        'PAGO_NO_REFLEJADO',
+        'Pago pendiente de validacion',
+        'El alumno reporta que realizo el pago, pero aparece como pendiente en el sistema.',
+        'ABIERTO',
+        'ALTA',
+        i.id_inscripcion,
+        GETDATE(),
+        GETDATE()
+    FROM usuarios u
+    JOIN alumnos a ON a.id_usuario = u.id_usuario
+    JOIN inscripciones i ON i.id_alumno = a.id_alumno
+    JOIN materias m ON m.id_materia = i.id_materia
+    WHERE u.usuario = 'Alumno1' AND m.clave = 'MAT101';
+END
+GO
 GO

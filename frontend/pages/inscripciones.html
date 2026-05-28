@@ -64,10 +64,10 @@
     <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="table-light">
-          <tr><th>#</th><th>Alumno</th><th>Materia</th><th>Horario</th><th>Periodo</th><th>Estado</th><th>Fecha</th><th class="text-end" id="thAcciones">Acciones</th></tr>
+          <tr><th>#</th><th>Alumno</th><th>Materia</th><th>Horario</th><th>Periodo</th><th>Estado</th><th>Pago</th><th>Fecha</th><th class="text-end" id="thAcciones">Acciones</th></tr>
         </thead>
         <tbody id="tbodyInscripciones">
-          <tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+          <tr><td colspan="9" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -155,7 +155,7 @@ const isDocente = Auth.hasRole('DOCENTE');
 
 if (!canManage) {
   document.getElementById('btnNuevaInscripcion').style.display = 'none';
-  document.getElementById('thAcciones').style.display = 'none';
+  document.getElementById('thAcciones').textContent = 'Soporte';
 }
 
 async function cargarDatos() {
@@ -174,11 +174,10 @@ async function cargarDatos() {
       ? await API.inscripciones.byAlumno(perfil.id_alumno).then(r => r?.data || [])
       : [];
   } else if (isDocente) {
-    alumnos = await API.alumnos.list().then(r => r?.data || []);
-    const grupos = await Promise.all(
-      alumnos.map(a => API.inscripciones.byAlumno(a.id_alumno).then(r => r?.data || []))
-    );
-    inscripciones = grupos.flat();
+    [inscripciones, alumnos] = await Promise.all([
+      API.inscripciones.list().then(r => r?.data || []),
+      API.alumnos.list().then(r => r?.data || []),
+    ]);
   }
 
   document.getElementById('sel_alumno').innerHTML = '<option value="">— Seleccionar alumno —</option>' +
@@ -207,11 +206,24 @@ function formatHorario(materia) {
   return [dia, hora].filter(Boolean).join(' · ') || 'No registrado';
 }
 
+function formatPago(inscripcion) {
+  if (!inscripcion.estado_pago) {
+    return '<span class="badge bg-secondary">Sin registro</span>';
+  }
+  const color = {
+    PAGADO: 'bg-success',
+    PENDIENTE: 'bg-warning text-dark',
+    RECHAZADO: 'bg-danger',
+  }[inscripcion.estado_pago] || 'bg-secondary';
+  const monto = inscripcion.monto_pago != null ? `<br><small class="text-muted">$${Number(inscripcion.monto_pago).toFixed(2)}</small>` : '';
+  return `<span class="badge ${color}">${inscripcion.estado_pago}</span>${monto}`;
+}
+
 function renderInscripciones(data) {
   document.getElementById('totalLabel').textContent = `${data.length} registros`;
   const tbody = document.getElementById('tbodyInscripciones');
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="${canManage ? 8 : 7}" class="text-center text-muted py-5"><i class="bi bi-clipboard2-x" style="font-size:2rem;display:block;"></i>Sin inscripciones</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-5"><i class="bi bi-clipboard2-x" style="font-size:2rem;display:block;"></i>Sin inscripciones</td></tr>';
     return;
   }
   const colorEstado = {PENDIENTE:'bg-warning text-dark',ACTIVA:'bg-success',BAJA:'bg-danger',FINALIZADA:'bg-secondary'};
@@ -227,11 +239,15 @@ function renderInscripciones(data) {
       <td><small class="${horario === 'No registrado' ? 'text-muted' : ''}">${horario}</small></td>
       <td class="text-center">${i.id_periodo}</td>
       <td><span class="badge ${colorEstado[i.estado] || 'bg-secondary'}">${i.estado}</span></td>
+      <td>${formatPago(i)}</td>
       <td><small>${fecha}</small></td>
       ${canManage ? `<td class="text-end">
         <button class="btn btn-outline-secondary btn-action me-1" onclick="abrirModalEstado(${i.id_inscripcion}, '${i.estado}')" title="Cambiar estado"><i class="bi bi-arrow-repeat"></i></button>
         <button class="btn btn-outline-danger btn-action" onclick="eliminarInscripcion(${i.id_inscripcion})" title="Eliminar"><i class="bi bi-trash"></i></button>
-      </td>` : ''}
+      </td>` : `<td class="text-end">
+        <button class="btn btn-outline-warning btn-action me-1" onclick="reportarTicket(${i.id_inscripcion}, 'MATERIA_INCORRECTA')" title="Reportar materia incorrecta"><i class="bi bi-exclamation-triangle"></i></button>
+        <button class="btn btn-outline-info btn-action" onclick="reportarTicket(${i.id_inscripcion}, 'PAGO_NO_REFLEJADO')" title="Reportar pago no reflejado"><i class="bi bi-receipt"></i></button>
+      </td>`}
     </tr>`;
   }).join('');
 }
@@ -247,6 +263,26 @@ function abrirModal() {
   document.getElementById('id_periodo').value = '';
   if (!bsModal) bsModal = new bootstrap.Modal(document.getElementById('modalInscripcion'));
   bsModal.show();
+}
+
+async function reportarTicket(idInscripcion, tipo) {
+  const titulo = tipo === 'PAGO_NO_REFLEJADO'
+    ? 'Pago no reflejado'
+    : 'Materia incorrecta en inscripción';
+  const descripcion = tipo === 'PAGO_NO_REFLEJADO'
+    ? `Reporto que el pago de la inscripción #${idInscripcion} no aparece reflejado correctamente.`
+    : `Reporto que la inscripción #${idInscripcion} contiene una materia que no corresponde.`;
+
+  const res = await API.tickets.create({
+    tipo,
+    titulo,
+    descripcion,
+    prioridad: 'ALTA',
+    id_inscripcion: idInscripcion,
+  });
+
+  if (res?.success) Toast.success(`Ticket #${res.data.id_ticket} generado`);
+  else Toast.error(res?.message || 'No se pudo generar el ticket');
 }
 
 async function guardarInscripcion() {

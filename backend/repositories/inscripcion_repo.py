@@ -5,7 +5,11 @@ from models.inscripcion import Inscripcion
 def _row_to_inscripcion(row) -> Inscripcion:
     return Inscripcion(
         id_inscripcion=row[0], id_alumno=row[1], id_materia=row[2],
-        id_periodo=row[3], estado=row[4], fecha_inscripcion=row[5]
+        id_periodo=row[3], estado=row[4], fecha_inscripcion=row[5],
+        id_pago=row[6] if len(row) > 6 else None,
+        monto_pago=row[7] if len(row) > 7 else None,
+        estado_pago=row[8] if len(row) > 8 else None,
+        fecha_pago=row[9] if len(row) > 9 else None,
     )
 
 
@@ -54,9 +58,18 @@ def get_inscripciones_by_alumno(id_alumno: int) -> list[Inscripcion]:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id_inscripcion, id_alumno, id_materia, id_periodo, estado, fecha_inscripcion
-        FROM inscripciones WHERE id_alumno = ?
-        ORDER BY fecha_inscripcion DESC
+        SELECT i.id_inscripcion, i.id_alumno, i.id_materia, i.id_periodo,
+               i.estado, i.fecha_inscripcion,
+               p.id_pago, p.monto, p.estado, p.fecha_pago
+        FROM inscripciones i
+        OUTER APPLY (
+            SELECT TOP 1 id_pago, monto, estado, fecha_pago
+            FROM pagos
+            WHERE id_inscripcion = i.id_inscripcion
+            ORDER BY ISNULL(fecha_pago, '19000101') DESC, id_pago DESC
+        ) p
+        WHERE i.id_alumno = ?
+        ORDER BY i.fecha_inscripcion DESC
     """, (id_alumno,))
     rows = cursor.fetchall()
     conn.close()
@@ -67,14 +80,23 @@ def get_all_inscripciones(id_periodo=None) -> list[Inscripcion]:
     conn = get_connection()
     cursor = conn.cursor()
     sql = """
-        SELECT id_inscripcion, id_alumno, id_materia, id_periodo, estado, fecha_inscripcion
-        FROM inscripciones WHERE 1=1
+        SELECT i.id_inscripcion, i.id_alumno, i.id_materia, i.id_periodo,
+               i.estado, i.fecha_inscripcion,
+               p.id_pago, p.monto, p.estado, p.fecha_pago
+        FROM inscripciones i
+        OUTER APPLY (
+            SELECT TOP 1 id_pago, monto, estado, fecha_pago
+            FROM pagos
+            WHERE id_inscripcion = i.id_inscripcion
+            ORDER BY ISNULL(fecha_pago, '19000101') DESC, id_pago DESC
+        ) p
+        WHERE 1=1
     """
     params = []
     if id_periodo:
-        sql += " AND id_periodo = ?"
+        sql += " AND i.id_periodo = ?"
         params.append(id_periodo)
-    sql += " ORDER BY fecha_inscripcion DESC"
+    sql += " ORDER BY i.fecha_inscripcion DESC"
     cursor.execute(sql, params)
     rows = cursor.fetchall()
     conn.close()

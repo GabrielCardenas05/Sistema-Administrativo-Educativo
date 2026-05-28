@@ -118,4 +118,9 @@ const API = {
     estado:   (id, estado) => patch(`/inscripciones/${id}/estado`, { estado }),
     delete:   (id)         => del(`/inscripciones/${id}`),
   },
+  tickets: {
+    list:   ()          => get('/tickets/'),
+    create: (data)      => post('/tickets/', data),
+    status: (id, estatus) => patch(`/tickets/${id}/estatus`, { estatus }),
+  },
 };

@@ -161,6 +161,80 @@ BEGIN
 END
 GO
 
+-- PASO 10: Crear tabla de pagos si no existe
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'pagos')
+BEGIN
+    CREATE TABLE pagos (
+        id_pago INT IDENTITY(1,1) PRIMARY KEY,
+        id_inscripcion INT NOT NULL,
+        monto DECIMAL(10,2) NOT NULL,
+        estado VARCHAR(20) DEFAULT 'PENDIENTE',
+        fecha_pago DATETIME,
+        FOREIGN KEY (id_inscripcion) REFERENCES inscripciones(id_inscripcion)
+    );
+    PRINT 'Tabla pagos creada.';
+END
+ELSE
+    PRINT 'Tabla pagos ya existe.';
+GO
+
+-- PASO 11: Indice de apoyo para pagos
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE object_id = OBJECT_ID('pagos') AND name = 'IX_pagos_inscripcion'
+)
+BEGIN
+    CREATE INDEX IX_pagos_inscripcion
+    ON pagos (id_inscripcion, estado);
+    PRINT 'Indice IX_pagos_inscripcion creado.';
+END
+GO
+
+-- PASO 12: Crear tabla de tickets de soporte si no existe
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'tickets_soporte')
+BEGIN
+    CREATE TABLE tickets_soporte (
+        id_ticket INT IDENTITY(1,1) PRIMARY KEY,
+        id_usuario INT NOT NULL,
+        tipo VARCHAR(50) NOT NULL,
+        titulo VARCHAR(150) NOT NULL,
+        descripcion VARCHAR(MAX) NOT NULL,
+        estatus VARCHAR(20) DEFAULT 'ABIERTO',
+        prioridad VARCHAR(20) DEFAULT 'MEDIA',
+        id_inscripcion INT NULL,
+        fecha_creacion DATETIME DEFAULT GETDATE(),
+        fecha_actualizacion DATETIME DEFAULT GETDATE(),
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario),
+        FOREIGN KEY (id_inscripcion) REFERENCES inscripciones(id_inscripcion)
+    );
+    PRINT 'Tabla tickets_soporte creada.';
+END
+ELSE
+    PRINT 'Tabla tickets_soporte ya existe.';
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE object_id = OBJECT_ID('tickets_soporte') AND name = 'IX_tickets_soporte_usuario_estatus'
+)
+BEGIN
+    CREATE INDEX IX_tickets_soporte_usuario_estatus
+    ON tickets_soporte (id_usuario, estatus);
+    PRINT 'Indice IX_tickets_soporte_usuario_estatus creado.';
+END
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE object_id = OBJECT_ID('tickets_soporte') AND name = 'IX_tickets_soporte_estatus'
+)
+BEGIN
+    CREATE INDEX IX_tickets_soporte_estatus
+    ON tickets_soporte (estatus, fecha_creacion);
+    PRINT 'Indice IX_tickets_soporte_estatus creado.';
+END
+GO
+
 -- ────────────────────────────────────────────────────────────
 -- Verificación final
 -- ────────────────────────────────────────────────────────────

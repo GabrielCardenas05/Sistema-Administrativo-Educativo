@@ -134,6 +134,13 @@ const Layout = {
                 </a>
               </li>
               ` : ''}
+
+              <li class="sidebar-header">Soporte</li>
+              <li class="nav-item">
+                <a class="nav-link" data-page="tickets" href="tickets.html">
+                  <i class="bi bi-ticket-detailed me-2"></i> Tickets
+                </a>
+              </li>
             </ul>
           </nav>
 

@@ -103,6 +103,9 @@ CREATE TABLE pagos (
     FOREIGN KEY (id_inscripcion) REFERENCES inscripciones(id_inscripcion)
 );
 
+CREATE INDEX IX_pagos_inscripcion
+ON pagos (id_inscripcion, estado);
+
 CREATE TABLE logs_auditoria (
     id_log INT IDENTITY(1,1) PRIMARY KEY,
     id_usuario INT NOT NULL,
@@ -111,6 +114,27 @@ CREATE TABLE logs_auditoria (
     fecha DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
 );
+
+CREATE TABLE tickets_soporte (
+    id_ticket INT IDENTITY(1,1) PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    tipo VARCHAR(50) NOT NULL,
+    titulo VARCHAR(150) NOT NULL,
+    descripcion VARCHAR(MAX) NOT NULL,
+    estatus VARCHAR(20) DEFAULT 'ABIERTO',
+    prioridad VARCHAR(20) DEFAULT 'MEDIA',
+    id_inscripcion INT NULL,
+    fecha_creacion DATETIME DEFAULT GETDATE(),
+    fecha_actualizacion DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario),
+    FOREIGN KEY (id_inscripcion) REFERENCES inscripciones(id_inscripcion)
+);
+
+CREATE INDEX IX_tickets_soporte_usuario_estatus
+ON tickets_soporte (id_usuario, estatus);
+
+CREATE INDEX IX_tickets_soporte_estatus
+ON tickets_soporte (estatus, fecha_creacion);
 
 INSERT INTO roles (nombre)
 VALUES ('ADMINISTRADOR'), ('ADMINISTRATIVO'), ('DOCENTE'), ('ALUMNO');
