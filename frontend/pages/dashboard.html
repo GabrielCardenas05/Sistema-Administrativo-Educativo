@@ -107,6 +107,8 @@
 
   const user = Auth.getUser();
   const isAdminOrAdm = Auth.hasRole('ADMINISTRADOR','ADMINISTRATIVO');
+  const isDocente = Auth.hasRole('DOCENTE');
+  const isAlumno = Auth.hasRole('ALUMNO');
 
   // Cargar contadores solo si tiene permisos
   if (isAdminOrAdm) {
@@ -137,6 +139,66 @@
   }
   if (Auth.hasRole('ALUMNO')) {
     accesos.push({icon:'bi-person-circle', color:'#1a6fc4', label:'Mi Perfil', href:'mi-perfil.html'});
+  }
+
+  const renderRoleStats = (cards) => {
+    const statCards = document.getElementById('statCards');
+    statCards.style.display = '';
+    statCards.innerHTML = cards.map(c => `
+      <div class="col-6 col-lg-3">
+        <div class="stat-card ${c.className}">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="stat-value">${c.value}</div>
+              <div class="stat-label">${c.label}</div>
+            </div>
+            <i class="bi ${c.icon} stat-icon"></i>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  };
+
+  if (!isAdminOrAdm && isDocente) {
+    const [ra, rm] = await Promise.all([
+      API.alumnos.list(),
+      API.materias.list(),
+    ]);
+    renderRoleStats([
+      {className:'stat-alumnos', value:ra?.data?.length || 0, label:'Alumnos visibles', icon:'bi-people-fill'},
+      {className:'stat-materias', value:rm?.data?.length || 0, label:'Materias registradas', icon:'bi-journal-bookmark-fill'},
+      {className:'stat-docentes', value:'DOC', label:'Rol docente', icon:'bi-person-badge-fill'},
+      {className:'stat-carreras', value:'OK', label:'Modo consulta', icon:'bi-check-circle-fill'},
+    ]);
+    accesos.push(
+      {icon:'bi-people', color:'#1a6fc4', label:'Alumnos', href:'alumnos.html'},
+      {icon:'bi-journal-bookmark', color:'#d97706', label:'Materias', href:'materias.html'},
+    );
+  }
+
+  if (!isAdminOrAdm && isAlumno) {
+    const rPerfil = await API.alumnos.me();
+    if (rPerfil?.success) {
+      const alumno = rPerfil.data;
+      const [rInsc, rMaterias] = await Promise.all([
+        API.inscripciones.byAlumno(alumno.id_alumno),
+        API.materias.list({id_carrera: alumno.id_carrera, semestre: alumno.semestre}),
+      ]);
+      renderRoleStats([
+        {className:'stat-alumnos', value:alumno.matricula || '-', label:'Matricula', icon:'bi-person-vcard-fill'},
+        {className:'stat-docentes', value:rInsc?.data?.length || 0, label:'Mis inscripciones', icon:'bi-clipboard2-check-fill'},
+        {className:'stat-carreras', value:`${alumno.semestre}°`, label:'Semestre actual', icon:'bi-layers-fill'},
+        {className:'stat-materias', value:rMaterias?.data?.length || 0, label:'Materias disponibles', icon:'bi-journal-bookmark-fill'},
+      ]);
+    } else {
+      renderRoleStats([
+        {className:'stat-alumnos', value:'!', label:'Perfil no vinculado', icon:'bi-exclamation-triangle-fill'},
+        {className:'stat-docentes', value:user?.usuario || '-', label:'Usuario activo', icon:'bi-person-fill'},
+        {className:'stat-carreras', value:'-', label:'Semestre', icon:'bi-layers-fill'},
+        {className:'stat-materias', value:'-', label:'Materias', icon:'bi-journal-bookmark-fill'},
+      ]);
+    }
+    accesos.push({icon:'bi-journal-bookmark', color:'#d97706', label:'Materias', href:'materias.html'});
   }
 
   const qc = document.getElementById('quickAccess');

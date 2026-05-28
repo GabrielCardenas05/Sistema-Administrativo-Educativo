@@ -57,7 +57,9 @@ const Layout = {
                 </a>
               </li>
 
+              ${isAdminOrAdm || Auth.hasRole('DOCENTE') ? `
               <li class="sidebar-header">Académico</li>
+              ` : ''}
 
               ${isAdminOrAdm ? `
               <li class="nav-item">
@@ -102,6 +104,11 @@ const Layout = {
                   <i class="bi bi-people me-2"></i> Alumnos
                 </a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link" data-page="materias" href="materias.html">
+                  <i class="bi bi-journal-bookmark me-2"></i> Materias
+                </a>
+              </li>
               ` : ''}
 
               ${Auth.hasRole('ALUMNO') ? `
@@ -109,6 +116,11 @@ const Layout = {
               <li class="nav-item">
                 <a class="nav-link" data-page="mi-perfil" href="mi-perfil.html">
                   <i class="bi bi-person-circle me-2"></i> Mi Perfil
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-page="materias" href="materias.html">
+                  <i class="bi bi-journal-bookmark me-2"></i> Materias
                 </a>
               </li>
               ` : ''}
