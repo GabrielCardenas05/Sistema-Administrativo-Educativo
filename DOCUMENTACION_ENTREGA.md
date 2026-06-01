@@ -17,11 +17,12 @@ El proyecto queda listo para presentacion funcional con los siguientes puntos cu
 - Gestion de carreras.
 - Gestion de materias.
 - Gestion de inscripciones.
-- Consulta de pagos asociados a inscripciones.
+- Consulta y administracion de pagos asociados a inscripciones.
 - Tickets de soporte para errores del sistema, materias incorrectas y pagos no reflejados.
 - Gestion de usuarios.
 - Validaciones de negocio para inscripciones.
-- Auditoria basica de acciones administrativas.
+- Auditoria basica de acciones administrativas con pantalla de bitacora.
+- CHECK constraints en base de datos para estados, cupos, semestres, pagos y tickets.
 - Scripts SQL para crear, actualizar y poblar la base de datos.
 - Frontend con dashboard y navegacion por modulos.
 - Conexion a BD con pooling de pyodbc y timeout configurable.
@@ -154,7 +155,9 @@ http://localhost:8000
 - Carreras: administracion de carreras.
 - Materias: administracion de materias, cupos, semestre y carrera.
 - Inscripciones: registro y control de materias inscritas por alumno.
+- Pagos: registro y actualizacion de pagos por inscripcion.
 - Tickets: reportes de pagos no reflejados, materias incorrectas y errores del sistema.
+- Bitacora: consulta de logs de auditoria.
 - Usuarios: administracion de cuentas y roles.
 - Mi Perfil: vista orientada al alumno.
 
@@ -170,6 +173,7 @@ En inscripciones se valida:
 - Que la materia corresponda al semestre/grado del alumno.
 - Que el cupo disponible no este lleno.
 - Que el alumno no consulte inscripciones ajenas cuando usa rol ALUMNO.
+- Que las bajas tengan un flujo formal con estado `BAJA`, motivo y fecha de baja.
 
 En usuarios se valida:
 
@@ -179,7 +183,14 @@ En usuarios se valida:
 En auditoria:
 
 - Se registran acciones administrativas sobre alumnos, docentes, carreras, materias, inscripciones y usuarios.
+- Los administradores y administrativos pueden consultar la bitacora desde el frontend.
 - La auditoria es de apoyo para trazabilidad y no bloquea la operacion principal si ocurre un error al registrar el log.
+
+En pagos:
+
+- Los administradores y administrativos pueden registrar y actualizar pagos.
+- El monto debe ser mayor a cero.
+- El estado del pago se limita a `PENDIENTE`, `PAGADO` o `RECHAZADO`.
 
 En tickets:
 
@@ -187,6 +198,13 @@ En tickets:
 - Los alumnos solo pueden reportar inscripciones que les pertenecen.
 - Los administradores y administrativos pueden ver todos los tickets y cambiar su estatus.
 - Los reportes contemplan pago no reflejado, materia incorrecta, error del sistema u otro problema.
+
+En base de datos:
+
+- `alumnos.semestre` y `materias.semestre` quedan limitados a valores validos de 1 a 10.
+- `materias.cupo` queda limitado a valores positivos.
+- Los estados de alumnos, inscripciones, pagos y tickets quedan restringidos por `CHECK`.
+- Las bajas de inscripcion exigen `motivo_baja` y `fecha_baja`.
 
 En concurrencia y carga:
 
@@ -203,13 +221,13 @@ En concurrencia y carga:
 | --- | --- |
 | Altas academicas | Modulos de alumnos, docentes, carreras, materias e inscripciones |
 | Cambios de materia | Gestion de inscripciones y estados |
-| Bajas | Estados en registros academicos |
+| Bajas | Flujo formal de baja con motivo y fecha |
 | Falta de permisos | Autenticacion JWT y roles |
 | Materias fuera de carrera/especialidad | Validacion de carrera y semestre al inscribir |
 | Cupos incorrectos | Validacion de cupo antes de confirmar inscripcion |
-| Datos inconsistentes | Llaves foraneas y validaciones de negocio |
-| Sin trazabilidad | Tabla de logs de auditoria |
-| Pago no reflejado | Estado de pagos en inscripciones y tickets de soporte |
+| Datos inconsistentes | Llaves foraneas, CHECK constraints y validaciones de negocio |
+| Sin trazabilidad | Tabla y pantalla de bitacora de auditoria |
+| Pago no reflejado | Administracion de pagos, estado de pagos en inscripciones y tickets de soporte |
 | Errores reportados por usuarios | Modulo de tickets con seguimiento de estatus |
 
 ## Notas para presentacion

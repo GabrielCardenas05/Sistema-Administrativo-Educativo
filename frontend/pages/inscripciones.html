@@ -121,6 +121,10 @@
           <option value="BAJA">Baja</option>
           <option value="FINALIZADA">Finalizada</option>
         </select>
+        <div class="mt-3" id="motivoBajaField" style="display:none;">
+          <label class="form-label fw-600">Motivo de baja *</label>
+          <textarea class="form-control" id="motivoBaja" rows="3" placeholder="Describe por qué se da de baja la inscripción"></textarea>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -238,7 +242,7 @@ function renderInscripciones(data) {
       <td>${ma?.nombre || '—'}<br><small class="text-muted">${ma?.clave || ''}</small></td>
       <td><small class="${horario === 'No registrado' ? 'text-muted' : ''}">${horario}</small></td>
       <td class="text-center">${i.id_periodo}</td>
-      <td><span class="badge ${colorEstado[i.estado] || 'bg-secondary'}">${i.estado}</span></td>
+      <td><span class="badge ${colorEstado[i.estado] || 'bg-secondary'}">${i.estado}</span>${i.motivo_baja ? `<br><small class="text-muted">${i.motivo_baja}</small>` : ''}</td>
       <td>${formatPago(i)}</td>
       <td><small>${fecha}</small></td>
       ${canManage ? `<td class="text-end">
@@ -255,6 +259,10 @@ function renderInscripciones(data) {
 ['searchInput','filtroEstado'].forEach(id =>
   document.getElementById(id).addEventListener('input', aplicarFiltros)
 );
+
+document.getElementById('nuevoEstado').addEventListener('change', function() {
+  document.getElementById('motivoBajaField').style.display = this.value === 'BAJA' ? '' : 'none';
+});
 
 function abrirModal() {
   if (!canManage) return;
@@ -306,6 +314,8 @@ function abrirModalEstado(id, estado) {
   if (!canManage) return;
   document.getElementById('estadoInscId').value = id;
   document.getElementById('nuevoEstado').value  = estado;
+  document.getElementById('motivoBaja').value = '';
+  document.getElementById('motivoBajaField').style.display = estado === 'BAJA' ? '' : 'none';
   if (!bsEstadoModal) bsEstadoModal = new bootstrap.Modal(document.getElementById('modalEstado'));
   bsEstadoModal.show();
 }
@@ -314,7 +324,9 @@ async function cambiarEstado() {
   if (!canManage) return;
   const id     = document.getElementById('estadoInscId').value;
   const estado = document.getElementById('nuevoEstado').value;
-  const res    = await API.inscripciones.estado(id, estado);
+  const motivo = document.getElementById('motivoBaja').value.trim();
+  if (estado === 'BAJA' && !motivo) { Toast.error('El motivo de baja es requerido'); return; }
+  const res    = await API.inscripciones.estado(id, estado, motivo);
   if (res?.success) { Toast.success('Estado actualizado'); bsEstadoModal.hide(); await cargarDatos(); }
   else Toast.error(res?.message || 'Error');
 }

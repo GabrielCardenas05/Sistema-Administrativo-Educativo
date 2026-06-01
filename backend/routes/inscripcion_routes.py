@@ -63,14 +63,18 @@ def crear_inscripcion(current_user):
 def cambiar_estado(current_user, id_inscripcion):
     data = request.get_json(silent=True) or {}
     estado = data.get("estado", "")
+    motivo_baja = data.get("motivo_baja")
     if not estado:
         return error("El campo 'estado' es requerido")
     try:
-        if not update_estado_inscripcion(id_inscripcion, estado):
+        if not update_estado_inscripcion(id_inscripcion, estado, motivo_baja=motivo_baja):
             return error("Estado inválido o inscripción no encontrada")
     except ValueError as e:
         return error(str(e), 400)
-    log_audit(current_user["id_usuario"], "CAMBIAR_ESTADO_INSCRIPCION", f"id_inscripcion={id_inscripcion}, estado={estado}")
+    descripcion = f"id_inscripcion={id_inscripcion}, estado={estado}"
+    if estado.upper() == "BAJA":
+        descripcion += f", motivo={motivo_baja}"
+    log_audit(current_user["id_usuario"], "CAMBIAR_ESTADO_INSCRIPCION", descripcion)
     return ok(message="Estado actualizado correctamente")
 
 

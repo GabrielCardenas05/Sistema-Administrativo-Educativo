@@ -89,11 +89,23 @@ const Layout = {
               </li>
               ` : ''}
 
-              ${isAdmin ? `
+              ${isAdminOrAdm ? `
               <li class="sidebar-header">Administración</li>
+              ${isAdmin ? `
               <li class="nav-item">
                 <a class="nav-link" data-page="usuarios" href="usuarios.html">
                   <i class="bi bi-person-gear me-2"></i> Usuarios
+                </a>
+              </li>
+              ` : ''}
+              <li class="nav-item">
+                <a class="nav-link" data-page="pagos" href="pagos.html">
+                  <i class="bi bi-cash-coin me-2"></i> Pagos
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-page="bitacora" href="bitacora.html">
+                  <i class="bi bi-journal-text me-2"></i> Bitácora
                 </a>
               </li>
               ` : ''}

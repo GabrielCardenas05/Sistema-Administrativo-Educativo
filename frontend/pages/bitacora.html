@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bitácora — SAE</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"/>
+  <link rel="stylesheet" href="../css/custom.css"/>
+  <style>
+    body{font-family:'Nunito',sans-serif;background:#f3f4f8;}
+    .app-sidebar{width:260px;min-height:100vh;position:fixed;top:0;left:0;display:flex;flex-direction:column;z-index:100;}
+    .app-main{margin-left:260px;min-height:100vh;display:flex;flex-direction:column;}
+    .nav-sidebar{padding:0 .5rem;}
+    .nav-sidebar .nav-link{padding:.6rem .9rem;font-size:.88rem;font-weight:600;display:flex;align-items:center;}
+    .sidebar-header{padding:.9rem 1rem .3rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);}
+    .sidebar-footer{margin-top:auto;}
+  </style>
+</head>
+<body>
+<script src="../js/api.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+  if(!Auth.guardPage('ADMINISTRADOR','ADMINISTRATIVO')) throw new Error();
+  Layout.init('bitacora');
+  Layout.setBreadcrumb([{label:'Bitácora'}]);
+</script>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="section-title mb-0"><i class="bi bi-journal-text me-2" style="color:#475569;"></i>Bitácora</h4>
+    <p class="text-muted mb-0" style="font-size:.88rem;">Trazabilidad de acciones administrativas y tickets</p>
+  </div>
+  <button class="btn btn-outline-primary btn-sm px-3" onclick="cargarDatos()">
+    <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+  </button>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Buscar usuario, acción o descripción..."/>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select form-select-sm" id="limitSelect">
+          <option value="100">Últimos 100</option>
+          <option value="200" selected>Últimos 200</option>
+          <option value="500">Últimos 500</option>
+        </select>
+      </div>
+      <div class="col text-end">
+        <span class="text-muted" style="font-size:.82rem;" id="totalLabel">Cargando...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>#</th><th>Usuario</th><th>Acción</th><th>Descripción</th><th>Fecha</th></tr>
+        </thead>
+        <tbody id="tbodyLogs">
+          <tr><td colspan="5" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+let logs = [];
+
+async function cargarDatos() {
+  document.getElementById('tbodyLogs').innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>';
+  const limit = parseInt(document.getElementById('limitSelect').value) || 200;
+  const r = await API.auditoria.list(limit);
+  logs = r?.data || [];
+  aplicarFiltros();
+}
+
+function formatDate(value) {
+  if (!value) return '—';
+  const d = new Date(String(value).replace(' ', 'T'));
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'medium' });
+}
+
+function aplicarFiltros() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const data = logs.filter(l => {
+    const txt = `${l.usuario || ''} ${l.accion || ''} ${l.descripcion || ''}`.toLowerCase();
+    return !q || txt.includes(q);
+  });
+  renderLogs(data);
+}
+
+function renderLogs(data) {
+  document.getElementById('totalLabel').textContent = `${data.length} registros`;
+  const tbody = document.getElementById('tbodyLogs');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-5"><i class="bi bi-journal-text" style="font-size:2rem;display:block;"></i>Sin registros de bitácora</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(l => `
+    <tr>
+      <td class="text-muted">${l.id_log}</td>
+      <td><span class="fw-600">${l.usuario || '—'}</span><br><small class="text-muted">ID ${l.id_usuario}</small></td>
+      <td><span class="badge bg-light text-dark">${l.accion}</span></td>
+      <td><small>${l.descripcion || '—'}</small></td>
+      <td><small>${formatDate(l.fecha)}</small></td>
+    </tr>`).join('');
+}
+
+document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
+document.getElementById('limitSelect').addEventListener('change', cargarDatos);
+cargarDatos();
+</script>
+</body>
+</html>

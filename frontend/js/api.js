@@ -115,12 +115,24 @@ const API = {
     },
     byAlumno: (id)         => get(`/inscripciones/alumno/${id}`),
     create:   (data)       => post('/inscripciones/', data),
-    estado:   (id, estado) => patch(`/inscripciones/${id}/estado`, { estado }),
+    estado:   (id, estado, motivo_baja = null) => {
+      const body = { estado };
+      if (motivo_baja) body.motivo_baja = motivo_baja;
+      return patch(`/inscripciones/${id}/estado`, body);
+    },
     delete:   (id)         => del(`/inscripciones/${id}`),
   },
   tickets: {
     list:   ()          => get('/tickets/'),
     create: (data)      => post('/tickets/', data),
     status: (id, estatus) => patch(`/tickets/${id}/estatus`, { estatus }),
+  },
+  pagos: {
+    list:   ()         => get('/pagos/'),
+    create: (data)     => post('/pagos/', data),
+    update: (id, data) => put(`/pagos/${id}`, data),
+  },
+  auditoria: {
+    list: (limit = 200) => get(`/auditoria/?limit=${limit}`),
   },
 };

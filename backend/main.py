@@ -14,6 +14,8 @@ from routes.carrera_routes import carreras_bp
 from routes.materia_routes import materias_bp
 from routes.inscripcion_routes import inscripciones_bp
 from routes.ticket_routes import tickets_bp
+from routes.pago_routes import pagos_bp
+from routes.audit_routes import auditoria_bp
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -27,6 +29,8 @@ app.register_blueprint(carreras_bp)
 app.register_blueprint(materias_bp)
 app.register_blueprint(inscripciones_bp)
 app.register_blueprint(tickets_bp)
+app.register_blueprint(pagos_bp)
+app.register_blueprint(auditoria_bp)
 
 
 # ── Manejo global de errores ───────────────────────────────────────────────────

@@ -235,6 +235,293 @@ BEGIN
 END
 GO
 
+-- PASO 13: Columnas para flujo formal de bajas
+IF OBJECT_ID('inscripciones', 'U') IS NOT NULL
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'inscripciones' AND COLUMN_NAME = 'motivo_baja'
+    )
+    BEGIN
+        ALTER TABLE inscripciones ADD motivo_baja VARCHAR(255) NULL;
+        PRINT 'Columna motivo_baja agregada a inscripciones.';
+    END
+
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'inscripciones' AND COLUMN_NAME = 'fecha_baja'
+    )
+    BEGIN
+        ALTER TABLE inscripciones ADD fecha_baja DATETIME NULL;
+        PRINT 'Columna fecha_baja agregada a inscripciones.';
+    END
+END
+GO
+
+-- PASO 14: Normalizar datos existentes antes de agregar CHECK constraints
+IF OBJECT_ID('usuarios', 'U') IS NOT NULL
+BEGIN
+    UPDATE usuarios
+    SET activo = 1
+    WHERE activo IS NULL;
+END
+GO
+
+IF OBJECT_ID('carreras', 'U') IS NOT NULL
+BEGIN
+    UPDATE carreras
+    SET activa = 1
+    WHERE activa IS NULL;
+END
+GO
+
+IF OBJECT_ID('alumnos', 'U') IS NOT NULL
+BEGIN
+    UPDATE alumnos
+    SET semestre = 1
+    WHERE semestre IS NULL OR semestre NOT BETWEEN 1 AND 10;
+
+    UPDATE alumnos
+    SET estatus = 'ACTIVO'
+    WHERE estatus IS NULL OR UPPER(estatus) NOT IN ('ACTIVO', 'INACTIVO', 'EGRESADO', 'BAJA');
+END
+GO
+
+IF OBJECT_ID('materias', 'U') IS NOT NULL
+BEGIN
+    UPDATE materias
+    SET semestre = 1
+    WHERE semestre IS NULL OR semestre NOT BETWEEN 1 AND 10;
+
+    UPDATE materias
+    SET cupo = 1
+    WHERE cupo IS NULL OR cupo <= 0;
+
+    UPDATE materias
+    SET activa = 1
+    WHERE activa IS NULL;
+END
+GO
+
+IF OBJECT_ID('periodos', 'U') IS NOT NULL
+BEGIN
+    UPDATE periodos
+    SET activo = 0
+    WHERE activo IS NULL;
+END
+GO
+
+IF OBJECT_ID('inscripciones', 'U') IS NOT NULL
+BEGIN
+    UPDATE inscripciones
+    SET estado = 'PENDIENTE'
+    WHERE estado IS NULL OR UPPER(estado) NOT IN ('PENDIENTE', 'ACTIVA', 'BAJA', 'FINALIZADA');
+
+    UPDATE inscripciones
+    SET motivo_baja = COALESCE(NULLIF(LTRIM(RTRIM(motivo_baja)), ''), 'Baja migrada desde estado existente'),
+        fecha_baja = COALESCE(fecha_baja, fecha_inscripcion, GETDATE())
+    WHERE UPPER(estado) = 'BAJA'
+      AND (motivo_baja IS NULL OR LTRIM(RTRIM(motivo_baja)) = '' OR fecha_baja IS NULL);
+END
+GO
+
+IF OBJECT_ID('pagos', 'U') IS NOT NULL
+BEGIN
+    UPDATE pagos
+    SET monto = 1.00
+    WHERE monto IS NULL OR monto <= 0;
+
+    UPDATE pagos
+    SET estado = 'PENDIENTE'
+    WHERE estado IS NULL OR UPPER(estado) NOT IN ('PENDIENTE', 'PAGADO', 'RECHAZADO');
+END
+GO
+
+IF OBJECT_ID('tickets_soporte', 'U') IS NOT NULL
+BEGIN
+    UPDATE tickets_soporte
+    SET tipo = 'OTRO'
+    WHERE tipo IS NULL OR UPPER(tipo) NOT IN ('MATERIA_INCORRECTA', 'PAGO_NO_REFLEJADO', 'ERROR_SISTEMA', 'OTRO');
+
+    UPDATE tickets_soporte
+    SET estatus = 'ABIERTO'
+    WHERE estatus IS NULL OR UPPER(estatus) NOT IN ('ABIERTO', 'EN_REVISION', 'RESUELTO', 'CERRADO');
+
+    UPDATE tickets_soporte
+    SET prioridad = 'MEDIA'
+    WHERE prioridad IS NULL OR UPPER(prioridad) NOT IN ('BAJA', 'MEDIA', 'ALTA');
+END
+GO
+
+-- PASO 15: CHECK constraints de integridad de datos
+IF OBJECT_ID('usuarios', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('usuarios') AND name = 'CK_usuarios_activo'
+)
+BEGIN
+    ALTER TABLE usuarios WITH CHECK ADD CONSTRAINT CK_usuarios_activo CHECK (activo IS NOT NULL AND activo IN (0, 1));
+    PRINT 'CHECK CK_usuarios_activo agregado.';
+END
+GO
+
+IF OBJECT_ID('carreras', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('carreras') AND name = 'CK_carreras_activa'
+)
+BEGIN
+    ALTER TABLE carreras WITH CHECK ADD CONSTRAINT CK_carreras_activa CHECK (activa IS NOT NULL AND activa IN (0, 1));
+    PRINT 'CHECK CK_carreras_activa agregado.';
+END
+GO
+
+IF OBJECT_ID('alumnos', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('alumnos') AND name = 'CK_alumnos_semestre_valido'
+)
+BEGIN
+    ALTER TABLE alumnos WITH CHECK ADD CONSTRAINT CK_alumnos_semestre_valido CHECK (semestre BETWEEN 1 AND 10);
+    PRINT 'CHECK CK_alumnos_semestre_valido agregado.';
+END
+GO
+
+IF OBJECT_ID('alumnos', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('alumnos') AND name = 'CK_alumnos_estatus_valido'
+)
+BEGIN
+    ALTER TABLE alumnos WITH CHECK ADD CONSTRAINT CK_alumnos_estatus_valido CHECK (estatus IS NOT NULL AND UPPER(estatus) IN ('ACTIVO', 'INACTIVO', 'EGRESADO', 'BAJA'));
+    PRINT 'CHECK CK_alumnos_estatus_valido agregado.';
+END
+GO
+
+IF OBJECT_ID('materias', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('materias') AND name = 'CK_materias_semestre_valido'
+)
+BEGIN
+    ALTER TABLE materias WITH CHECK ADD CONSTRAINT CK_materias_semestre_valido CHECK (semestre BETWEEN 1 AND 10);
+    PRINT 'CHECK CK_materias_semestre_valido agregado.';
+END
+GO
+
+IF OBJECT_ID('materias', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('materias') AND name = 'CK_materias_cupo_positivo'
+)
+BEGIN
+    ALTER TABLE materias WITH CHECK ADD CONSTRAINT CK_materias_cupo_positivo CHECK (cupo > 0);
+    PRINT 'CHECK CK_materias_cupo_positivo agregado.';
+END
+GO
+
+IF OBJECT_ID('materias', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('materias') AND name = 'CK_materias_activa'
+)
+BEGIN
+    ALTER TABLE materias WITH CHECK ADD CONSTRAINT CK_materias_activa CHECK (activa IS NOT NULL AND activa IN (0, 1));
+    PRINT 'CHECK CK_materias_activa agregado.';
+END
+GO
+
+IF OBJECT_ID('periodos', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('periodos') AND name = 'CK_periodos_activo'
+)
+BEGIN
+    ALTER TABLE periodos WITH CHECK ADD CONSTRAINT CK_periodos_activo CHECK (activo IS NOT NULL AND activo IN (0, 1));
+    PRINT 'CHECK CK_periodos_activo agregado.';
+END
+GO
+
+IF OBJECT_ID('inscripciones', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('inscripciones') AND name = 'CK_inscripciones_estado_valido'
+)
+BEGIN
+    ALTER TABLE inscripciones WITH CHECK ADD CONSTRAINT CK_inscripciones_estado_valido CHECK (estado IS NOT NULL AND UPPER(estado) IN ('PENDIENTE', 'ACTIVA', 'BAJA', 'FINALIZADA'));
+    PRINT 'CHECK CK_inscripciones_estado_valido agregado.';
+END
+GO
+
+IF OBJECT_ID('inscripciones', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('inscripciones') AND name = 'CK_inscripciones_baja_formal'
+)
+BEGIN
+    ALTER TABLE inscripciones WITH CHECK ADD CONSTRAINT CK_inscripciones_baja_formal CHECK (
+        UPPER(estado) <> 'BAJA'
+        OR (motivo_baja IS NOT NULL AND LTRIM(RTRIM(motivo_baja)) <> '' AND fecha_baja IS NOT NULL)
+    );
+    PRINT 'CHECK CK_inscripciones_baja_formal agregado.';
+END
+GO
+
+IF OBJECT_ID('pagos', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('pagos') AND name = 'CK_pagos_monto_positivo'
+)
+BEGIN
+    ALTER TABLE pagos WITH CHECK ADD CONSTRAINT CK_pagos_monto_positivo CHECK (monto > 0);
+    PRINT 'CHECK CK_pagos_monto_positivo agregado.';
+END
+GO
+
+IF OBJECT_ID('pagos', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('pagos') AND name = 'CK_pagos_estado_valido'
+)
+BEGIN
+    ALTER TABLE pagos WITH CHECK ADD CONSTRAINT CK_pagos_estado_valido CHECK (estado IS NOT NULL AND UPPER(estado) IN ('PENDIENTE', 'PAGADO', 'RECHAZADO'));
+    PRINT 'CHECK CK_pagos_estado_valido agregado.';
+END
+GO
+
+IF OBJECT_ID('tickets_soporte', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('tickets_soporte') AND name = 'CK_tickets_tipo_valido'
+)
+BEGIN
+    ALTER TABLE tickets_soporte WITH CHECK ADD CONSTRAINT CK_tickets_tipo_valido CHECK (tipo IS NOT NULL AND UPPER(tipo) IN ('MATERIA_INCORRECTA', 'PAGO_NO_REFLEJADO', 'ERROR_SISTEMA', 'OTRO'));
+    PRINT 'CHECK CK_tickets_tipo_valido agregado.';
+END
+GO
+
+IF OBJECT_ID('tickets_soporte', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('tickets_soporte') AND name = 'CK_tickets_estatus_valido'
+)
+BEGIN
+    ALTER TABLE tickets_soporte WITH CHECK ADD CONSTRAINT CK_tickets_estatus_valido CHECK (estatus IS NOT NULL AND UPPER(estatus) IN ('ABIERTO', 'EN_REVISION', 'RESUELTO', 'CERRADO'));
+    PRINT 'CHECK CK_tickets_estatus_valido agregado.';
+END
+GO
+
+IF OBJECT_ID('tickets_soporte', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('tickets_soporte') AND name = 'CK_tickets_prioridad_valida'
+)
+BEGIN
+    ALTER TABLE tickets_soporte WITH CHECK ADD CONSTRAINT CK_tickets_prioridad_valida CHECK (prioridad IS NOT NULL AND UPPER(prioridad) IN ('BAJA', 'MEDIA', 'ALTA'));
+    PRINT 'CHECK CK_tickets_prioridad_valida agregado.';
+END
+GO
+
 -- ────────────────────────────────────────────────────────────
 -- Verificación final
 -- ────────────────────────────────────────────────────────────

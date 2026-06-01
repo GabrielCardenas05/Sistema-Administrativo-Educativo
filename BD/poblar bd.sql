@@ -136,18 +136,23 @@ GO
 -- Inscripciones de ejemplo
 DECLARE @periodo INT = (SELECT id_periodo FROM periodos WHERE nombre = '2026-1');
 
-INSERT INTO inscripciones (id_alumno, id_materia, id_periodo, estado, fecha_inscripcion)
-SELECT a.id_alumno, m.id_materia, @periodo, v.estado, GETDATE()
+INSERT INTO inscripciones (
+    id_alumno, id_materia, id_periodo, estado,
+    fecha_inscripcion, motivo_baja, fecha_baja
+)
+SELECT
+    a.id_alumno, m.id_materia, @periodo, v.estado,
+    GETDATE(), v.motivo_baja, v.fecha_baja
 FROM (VALUES
-    ('2026001', 'SIS101', 'ACTIVA'),
-    ('2026001', 'MAT101', 'ACTIVA'),
-    ('2026002', 'SIS101', 'PENDIENTE'),
-    ('2026002', 'COM101', 'ACTIVA'),
-    ('2026003', 'MAT101', 'ACTIVA'),
-    ('2026003', 'COM101', 'BAJA'),
-    ('2026004', 'SIS101', 'ACTIVA'),
-    ('2026005', 'ADM101', 'ACTIVA')
-) v(matricula, clave, estado)
+    ('2026001', 'SIS101', 'ACTIVA', NULL, NULL),
+    ('2026001', 'MAT101', 'ACTIVA', NULL, NULL),
+    ('2026002', 'SIS101', 'PENDIENTE', NULL, NULL),
+    ('2026002', 'COM101', 'ACTIVA', NULL, NULL),
+    ('2026003', 'MAT101', 'ACTIVA', NULL, NULL),
+    ('2026003', 'COM101', 'BAJA', 'Baja administrativa de demostracion', GETDATE()),
+    ('2026004', 'SIS101', 'ACTIVA', NULL, NULL),
+    ('2026005', 'ADM101', 'ACTIVA', NULL, NULL)
+) v(matricula, clave, estado, motivo_baja, fecha_baja)
 JOIN alumnos a ON a.matricula = v.matricula
 JOIN materias m ON m.clave = v.clave
 WHERE NOT EXISTS (
