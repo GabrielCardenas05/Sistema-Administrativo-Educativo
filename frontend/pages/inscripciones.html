@@ -59,6 +59,28 @@
   </div>
 </div>
 
+<div class="card mb-3" id="cardMateriasAlumno" style="display:none;">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div>
+      <i class="bi bi-journal-plus me-2" style="color:#16a34a;"></i>
+      <span class="fw-700">Materias disponibles de mi semestre</span>
+    </div>
+    <span class="badge bg-light text-dark">Pago simulado: $1500.00</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Clave</th><th>Materia</th><th>Semestre</th><th>Cupo</th><th class="text-end">Inscripción</th></tr>
+        </thead>
+        <tbody id="tbodyMateriasAlumno">
+          <tr><td colspan="5" class="text-center text-muted py-4">Cargando materias disponibles...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <div class="card">
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -149,10 +171,70 @@
   </div>
 </div>
 
+<div class="modal fade" id="modalPagoAlumno" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Pagar inscripción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info py-2 mb-3">
+          <div class="fw-700" id="materiaPagoTitulo">Materia</div>
+          <small>Se validará una tarjeta de prueba. No se guarda el número completo ni el CVV.</small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-600">Titular *</label>
+          <input type="text" class="form-control" id="pagoTitular" placeholder="Nombre como aparece en la tarjeta"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-600">Número de tarjeta *</label>
+          <input type="text" class="form-control" id="pagoTarjeta" inputmode="numeric" maxlength="23" placeholder="4111 1111 1111 1111"/>
+        </div>
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label fw-600">Expiración *</label>
+            <input type="month" class="form-control" id="pagoExpiracion"/>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-600">CVV *</label>
+            <input type="password" class="form-control" id="pagoCvv" inputmode="numeric" maxlength="4" placeholder="123"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-success" onclick="pagarMateria()">
+          Pagar $1500.00 <span class="spinner-border spinner-border-sm ms-1" id="spinPagar" style="display:none;"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalComprobante" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Comprobante de pago</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="border rounded p-3" id="comprobanteBody"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 let inscripciones = [], alumnos = [], materias = [];
-let bsModal, bsEstadoModal;
+let alumnoPerfil = null;
+let materiaSeleccionadaPago = null;
+let bsModal, bsEstadoModal, bsPagoModal, bsComprobanteModal;
 const canManage = Auth.hasRole('ADMINISTRADOR','ADMINISTRATIVO');
 const isAlumno = Auth.hasRole('ALUMNO');
 const isDocente = Auth.hasRole('DOCENTE');
@@ -163,22 +245,26 @@ if (!canManage) {
 }
 
 async function cargarDatos() {
-  materias = await API.materias.list().then(r => r?.data || []);
-
   if (canManage) {
-    [inscripciones, alumnos] = await Promise.all([
+    [materias, inscripciones, alumnos] = await Promise.all([
+      API.materias.list().then(r => r?.data || []),
       API.inscripciones.list().then(r => r?.data || []),
       API.alumnos.list().then(r => r?.data || []),
     ]);
   } else if (isAlumno) {
-    const rPerfil = await API.alumnos.me();
-    const perfil = rPerfil?.success ? rPerfil.data : null;
-    alumnos = perfil ? [perfil] : [];
-    inscripciones = perfil
-      ? await API.inscripciones.byAlumno(perfil.id_alumno).then(r => r?.data || [])
+    const [rPerfil, rMaterias] = await Promise.all([
+      API.alumnos.me(),
+      API.materias.list(),
+    ]);
+    alumnoPerfil = rPerfil?.success ? rPerfil.data : null;
+    materias = rMaterias?.data || [];
+    alumnos = alumnoPerfil ? [alumnoPerfil] : [];
+    inscripciones = alumnoPerfil
+      ? await API.inscripciones.byAlumno(alumnoPerfil.id_alumno).then(r => r?.data || [])
       : [];
   } else if (isDocente) {
-    [inscripciones, alumnos] = await Promise.all([
+    [materias, inscripciones, alumnos] = await Promise.all([
+      API.materias.list().then(r => r?.data || []),
       API.inscripciones.list().then(r => r?.data || []),
       API.alumnos.list().then(r => r?.data || []),
     ]);
@@ -188,7 +274,44 @@ async function cargarDatos() {
     alumnos.map(a => `<option value="${a.id_alumno}">${a.nombre} (${a.matricula})</option>`).join('');
   document.getElementById('sel_materia').innerHTML = '<option value="">— Seleccionar materia —</option>' +
     materias.map(m => `<option value="${m.id_materia}">[${m.clave}] ${m.nombre}</option>`).join('');
+  renderMateriasAlumno();
   aplicarFiltros();
+}
+
+function renderMateriasAlumno() {
+  if (!isAlumno) return;
+  document.getElementById('cardMateriasAlumno').style.display = '';
+  const tbody = document.getElementById('tbodyMateriasAlumno');
+  if (!alumnoPerfil) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No se encontró tu perfil de alumno</td></tr>';
+    return;
+  }
+  const inscritas = new Set(
+    inscripciones
+      .filter(i => ['PENDIENTE', 'ACTIVA'].includes(i.estado))
+      .map(i => i.id_materia)
+  );
+  const disponibles = materias.filter(m =>
+    m.activa && m.id_carrera === alumnoPerfil.id_carrera && m.semestre === alumnoPerfil.semestre
+  );
+  if (!disponibles.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No hay materias disponibles para tu semestre</td></tr>';
+    return;
+  }
+  tbody.innerHTML = disponibles.map(m => {
+    const yaInscrita = inscritas.has(m.id_materia);
+    return `<tr>
+      <td><span class="badge bg-warning text-dark">${m.clave}</span></td>
+      <td><span class="fw-600">${m.nombre}</span></td>
+      <td>${m.semestre}°</td>
+      <td>${m.cupo}</td>
+      <td class="text-end">
+        ${yaInscrita
+          ? '<span class="badge bg-success">Ya inscrita</span>'
+          : `<button class="btn btn-success btn-sm" onclick="abrirPagoAlumno(${m.id_materia})"><i class="bi bi-credit-card me-1"></i> Inscribirme</button>`}
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function aplicarFiltros() {
@@ -291,6 +414,66 @@ async function reportarTicket(idInscripcion, tipo) {
 
   if (res?.success) Toast.success(`Ticket #${res.data.id_ticket} generado`);
   else Toast.error(res?.message || 'No se pudo generar el ticket');
+}
+
+function abrirPagoAlumno(idMateria) {
+  materiaSeleccionadaPago = materias.find(m => m.id_materia === idMateria);
+  if (!materiaSeleccionadaPago || !alumnoPerfil) return;
+  document.getElementById('materiaPagoTitulo').textContent = `${materiaSeleccionadaPago.nombre} (${materiaSeleccionadaPago.clave})`;
+  document.getElementById('pagoTitular').value = alumnoPerfil.nombre || '';
+  document.getElementById('pagoTarjeta').value = '';
+  document.getElementById('pagoExpiracion').value = '';
+  document.getElementById('pagoCvv').value = '';
+  if (!bsPagoModal) bsPagoModal = new bootstrap.Modal(document.getElementById('modalPagoAlumno'));
+  bsPagoModal.show();
+}
+
+function mostrarComprobante(pago) {
+  const materia = materiaSeleccionadaPago || materias.find(m => m.id_materia === pago.id_materia) || {};
+  const fecha = pago.fecha_pago ? new Date(String(pago.fecha_pago).replace(' ', 'T')).toLocaleString('es-MX') : '—';
+  document.getElementById('comprobanteBody').innerHTML = `
+    <div class="text-center mb-3">
+      <i class="bi bi-check-circle-fill text-success" style="font-size:2rem;"></i>
+      <h5 class="mt-2 mb-0">Pago aprobado</h5>
+      <small class="text-muted">Comprobante generado por SAE</small>
+    </div>
+    <div class="row g-2">
+      <div class="col-5 text-muted">Folio</div><div class="col-7 fw-700">${pago.referencia}</div>
+      <div class="col-5 text-muted">Inscripción</div><div class="col-7">#${pago.id_inscripcion}</div>
+      <div class="col-5 text-muted">Materia</div><div class="col-7">${materia.nombre || '—'}</div>
+      <div class="col-5 text-muted">Alumno</div><div class="col-7">${alumnoPerfil?.nombre || '—'}</div>
+      <div class="col-5 text-muted">Monto</div><div class="col-7 fw-700">$${Number(pago.monto || 0).toFixed(2)}</div>
+      <div class="col-5 text-muted">Tarjeta</div><div class="col-7">**** ${pago.tarjeta_ultimos4}</div>
+      <div class="col-5 text-muted">Fecha</div><div class="col-7">${fecha}</div>
+    </div>`;
+  if (!bsComprobanteModal) bsComprobanteModal = new bootstrap.Modal(document.getElementById('modalComprobante'));
+  bsComprobanteModal.show();
+}
+
+async function pagarMateria() {
+  if (!materiaSeleccionadaPago) return;
+  const data = {
+    id_materia: materiaSeleccionadaPago.id_materia,
+    titular: document.getElementById('pagoTitular').value.trim(),
+    tarjeta_numero: document.getElementById('pagoTarjeta').value.trim(),
+    expiracion: document.getElementById('pagoExpiracion').value,
+    cvv: document.getElementById('pagoCvv').value.trim(),
+  };
+  if (!data.titular || !data.tarjeta_numero || !data.expiracion || !data.cvv) {
+    Toast.error('Completa todos los datos de pago');
+    return;
+  }
+  document.getElementById('spinPagar').style.display = 'inline-block';
+  const res = await API.pagos.payEnrollment(data);
+  document.getElementById('spinPagar').style.display = 'none';
+  if (res?.success) {
+    Toast.success('Inscripción pagada correctamente');
+    bsPagoModal.hide();
+    mostrarComprobante(res.data);
+    await cargarDatos();
+  } else {
+    Toast.error(res?.message || 'No se pudo procesar el pago');
+  }
 }
 
 async function guardarInscripcion() {

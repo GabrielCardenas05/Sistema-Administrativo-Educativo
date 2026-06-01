@@ -18,6 +18,7 @@ El proyecto queda listo para presentacion funcional con los siguientes puntos cu
 - Gestion de materias.
 - Gestion de inscripciones.
 - Consulta y administracion de pagos asociados a inscripciones.
+- Inscripcion de alumnos a materias de su semestre con pago simulado y comprobante.
 - Tickets de soporte para errores del sistema, materias incorrectas y pagos no reflejados.
 - Gestion de usuarios.
 - Validaciones de negocio para inscripciones.
@@ -156,6 +157,7 @@ http://localhost:8000
 - Materias: administracion de materias, cupos, semestre y carrera.
 - Inscripciones: registro y control de materias inscritas por alumno.
 - Pagos: registro y actualizacion de pagos por inscripcion.
+- Mis pagos: vista de alumno con comprobantes y estado actual de sus pagos.
 - Tickets: reportes de pagos no reflejados, materias incorrectas y errores del sistema.
 - Bitacora: consulta de logs de auditoria.
 - Usuarios: administracion de cuentas y roles.
@@ -174,6 +176,7 @@ En inscripciones se valida:
 - Que el cupo disponible no este lleno.
 - Que el alumno no consulte inscripciones ajenas cuando usa rol ALUMNO.
 - Que las bajas tengan un flujo formal con estado `BAJA`, motivo y fecha de baja.
+- Que el alumno solo pueda inscribirse desde la interfaz a materias de su carrera y semestre.
 
 En usuarios se valida:
 
@@ -189,6 +192,10 @@ En auditoria:
 En pagos:
 
 - Los administradores y administrativos pueden registrar y actualizar pagos.
+- Los alumnos pueden pagar una inscripcion con tarjeta simulada desde el modulo de inscripciones.
+- La tarjeta simulada exige numero con formato valido, titular, CVV y fecha de expiracion vigente.
+- El sistema no guarda numero completo de tarjeta ni CVV; solo registra los ultimos 4 digitos y el folio.
+- Cada pago genera referencia/comprobante consultable desde la pestaña de pagos del alumno.
 - El monto debe ser mayor a cero.
 - El estado del pago se limita a `PENDIENTE`, `PAGADO` o `RECHAZADO`.
 
@@ -227,7 +234,7 @@ En concurrencia y carga:
 | Cupos incorrectos | Validacion de cupo antes de confirmar inscripcion |
 | Datos inconsistentes | Llaves foraneas, CHECK constraints y validaciones de negocio |
 | Sin trazabilidad | Tabla y pantalla de bitacora de auditoria |
-| Pago no reflejado | Administracion de pagos, estado de pagos en inscripciones y tickets de soporte |
+| Pago no reflejado | Administracion de pagos, comprobantes, estado de pagos en inscripciones y tickets de soporte |
 | Errores reportados por usuarios | Modulo de tickets con seguimiento de estatus |
 
 ## Notas para presentacion

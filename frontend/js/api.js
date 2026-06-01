@@ -129,6 +129,8 @@ const API = {
   },
   pagos: {
     list:   ()         => get('/pagos/'),
+    mine:   ()         => get('/pagos/mis-pagos'),
+    payEnrollment: (data) => post('/pagos/pagar-inscripcion', data),
     create: (data)     => post('/pagos/', data),
     update: (id, data) => put(`/pagos/${id}`, data),
   },

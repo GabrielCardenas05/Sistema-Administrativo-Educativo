@@ -56,6 +56,60 @@ def _validate_inscripcion(cursor, id_alumno: int, id_materia: int, exclude_id: i
         raise ValueError("No hay cupo disponible para la materia")
 
 
+def _get_active_period(cursor) -> int:
+    cursor.execute("""
+        SELECT TOP 1 id_periodo
+        FROM periodos
+        WHERE activo = 1
+        ORDER BY id_periodo DESC
+    """)
+    row = cursor.fetchone()
+    if not row:
+        cursor.execute("SELECT TOP 1 id_periodo FROM periodos ORDER BY id_periodo DESC")
+        row = cursor.fetchone()
+    if not row:
+        raise ValueError("No hay periodo escolar registrado")
+    return row[0]
+
+
+def create_or_get_student_inscripcion(cursor, id_usuario: int, id_materia: int) -> int:
+    cursor.execute("""
+        SELECT id_alumno
+        FROM alumnos
+        WHERE id_usuario = ? AND UPPER(estatus) = 'ACTIVO'
+    """, (id_usuario,))
+    alumno = cursor.fetchone()
+    if not alumno:
+        raise ValueError("Perfil de alumno activo no encontrado")
+
+    id_alumno = alumno[0]
+    id_periodo = _get_active_period(cursor)
+    cursor.execute("""
+        SELECT id_inscripcion, estado
+        FROM inscripciones
+        WHERE id_alumno = ? AND id_materia = ? AND id_periodo = ?
+    """, (id_alumno, id_materia, id_periodo))
+    existente = cursor.fetchone()
+    if existente:
+        estado = str(existente[1]).upper()
+        if estado in {"BAJA", "FINALIZADA"}:
+            raise ValueError("La inscripción existente no puede pagarse por su estado actual")
+        cursor.execute("""
+            UPDATE inscripciones
+            SET estado = 'ACTIVA', motivo_baja = NULL, fecha_baja = NULL
+            WHERE id_inscripcion = ?
+        """, (existente[0],))
+        return existente[0]
+
+    _validate_inscripcion(cursor, id_alumno, id_materia)
+    cursor.execute("""
+        INSERT INTO inscripciones (id_alumno, id_materia, id_periodo, estado, fecha_inscripcion)
+        OUTPUT INSERTED.id_inscripcion
+        VALUES (?, ?, ?, 'ACTIVA', GETDATE())
+    """, (id_alumno, id_materia, id_periodo))
+    return cursor.fetchone()[0]
+
+
 def get_inscripciones_by_alumno(id_alumno: int) -> list[Inscripcion]:
     conn = get_connection()
     cursor = conn.cursor()

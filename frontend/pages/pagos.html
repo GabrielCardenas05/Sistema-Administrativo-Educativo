@@ -22,17 +22,17 @@
 <script src="../js/ui.js"></script>
 <script src="../js/layout.js"></script>
 <script>
-  if(!Auth.guardPage('ADMINISTRADOR','ADMINISTRATIVO')) throw new Error();
+  if(!Auth.guardPage('ADMINISTRADOR','ADMINISTRATIVO','ALUMNO')) throw new Error();
   Layout.init('pagos');
   Layout.setBreadcrumb([{label:'Pagos'}]);
 </script>
 
 <div class="d-flex align-items-center justify-content-between mb-4">
   <div>
-    <h4 class="section-title mb-0"><i class="bi bi-cash-coin me-2" style="color:#16a34a;"></i>Pagos</h4>
-    <p class="text-muted mb-0" style="font-size:.88rem;">Administración de pagos por inscripción</p>
+    <h4 class="section-title mb-0"><i class="bi bi-cash-coin me-2" style="color:#16a34a;"></i><span id="pageTitle">Pagos</span></h4>
+    <p class="text-muted mb-0" style="font-size:.88rem;" id="pageSubtitle">Administración de pagos por inscripción</p>
   </div>
-  <button class="btn btn-primary btn-sm px-3" onclick="abrirModal()">
+  <button class="btn btn-primary btn-sm px-3" id="btnNuevoPago" onclick="abrirModal()">
     <i class="bi bi-plus-lg me-1"></i> Nuevo Pago
   </button>
 </div>
@@ -113,24 +113,75 @@
   </div>
 </div>
 
+<div class="modal fade" id="modalComprobante" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Comprobante de pago</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="border rounded p-3" id="comprobanteBody"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 let pagos = [], inscripciones = [], alumnos = [], materias = [];
-let bsModal;
+let bsModal, bsComprobanteModal;
+const canManage = Auth.hasRole('ADMINISTRADOR','ADMINISTRATIVO');
+const isAlumno = Auth.hasRole('ALUMNO') && !canManage;
+
+if (isAlumno) {
+  document.getElementById('btnNuevoPago').style.display = 'none';
+  document.getElementById('pageTitle').textContent = 'Mis pagos';
+  document.getElementById('pageSubtitle').textContent = 'Comprobantes y estado actual de mis pagos';
+}
 
 async function cargarDatos() {
-  [pagos, inscripciones, alumnos, materias] = await Promise.all([
-    API.pagos.list().then(r => r?.data || []),
-    API.inscripciones.list().then(r => r?.data || []),
-    API.alumnos.list().then(r => r?.data || []),
-    API.materias.list().then(r => r?.data || []),
-  ]);
+  if (canManage) {
+    [pagos, inscripciones, alumnos, materias] = await Promise.all([
+      API.pagos.list().then(r => r?.data || []),
+      API.inscripciones.list().then(r => r?.data || []),
+      API.alumnos.list().then(r => r?.data || []),
+      API.materias.list().then(r => r?.data || []),
+    ]);
+  } else {
+    pagos = await API.pagos.mine().then(r => r?.data || []);
+    inscripciones = [];
+    alumnos = [];
+    materias = [];
+  }
   cargarSelectInscripciones();
   aplicarFiltros();
 }
 
-function getDetalleInscripcion(id) {
-  const ins = inscripciones.find(i => Number(i.id_inscripcion) === Number(id));
+function getDetalleInscripcion(pago) {
+  if (pago?.alumno || pago?.materia) {
+    return {
+      ins: {
+        id_inscripcion: pago.id_inscripcion,
+        estado: pago.estado_inscripcion,
+        id_periodo: pago.id_periodo,
+      },
+      alumno: {
+        id_alumno: pago.id_alumno,
+        nombre: pago.alumno,
+        matricula: pago.matricula,
+      },
+      materia: {
+        id_materia: pago.id_materia,
+        nombre: pago.materia,
+        clave: pago.clave_materia,
+      },
+    };
+  }
+  const ins = inscripciones.find(i => Number(i.id_inscripcion) === Number(pago?.id_inscripcion ?? pago));
   const alumno = ins ? alumnos.find(a => a.id_alumno === ins.id_alumno) : null;
   const materia = ins ? materias.find(m => m.id_materia === ins.id_materia) : null;
   return { ins, alumno, materia };
@@ -139,7 +190,7 @@ function getDetalleInscripcion(id) {
 function cargarSelectInscripciones() {
   const select = document.getElementById('id_inscripcion');
   select.innerHTML = '<option value="">— Seleccionar inscripción —</option>' + inscripciones.map(i => {
-    const { alumno, materia } = getDetalleInscripcion(i.id_inscripcion);
+    const { alumno, materia } = getDetalleInscripcion(i);
     const label = `#${i.id_inscripcion} · ${alumno?.nombre || 'Alumno'} · ${materia?.nombre || 'Materia'}`;
     return `<option value="${i.id_inscripcion}">${label}</option>`;
   }).join('');
@@ -161,7 +212,7 @@ function aplicarFiltros() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const estado = document.getElementById('filtroEstado').value;
   const data = pagos.filter(p => {
-    const { alumno, materia } = getDetalleInscripcion(p.id_inscripcion);
+    const { alumno, materia } = getDetalleInscripcion(p);
     const txt = `#${p.id_inscripcion} ${alumno?.nombre || ''} ${alumno?.matricula || ''} ${materia?.nombre || ''} ${materia?.clave || ''}`.toLowerCase();
     return (!q || txt.includes(q)) && (!estado || p.estado === estado);
   });
@@ -177,7 +228,7 @@ function renderPagos(data) {
   }
   const colorEstado = {PAGADO:'bg-success',PENDIENTE:'bg-warning text-dark',RECHAZADO:'bg-danger'};
   tbody.innerHTML = data.map(p => {
-    const { alumno, materia } = getDetalleInscripcion(p.id_inscripcion);
+    const { alumno, materia } = getDetalleInscripcion(p);
     return `<tr>
       <td class="text-muted">${p.id_pago}</td>
       <td><span class="badge bg-light text-dark">#${p.id_inscripcion}</span></td>
@@ -187,7 +238,9 @@ function renderPagos(data) {
       <td><span class="badge ${colorEstado[p.estado] || 'bg-secondary'}">${p.estado}</span></td>
       <td><small>${formatDate(p.fecha_pago)}</small></td>
       <td class="text-end">
-        <button class="btn btn-outline-primary btn-action" onclick="abrirModal(${p.id_pago})" title="Editar pago"><i class="bi bi-pencil"></i></button>
+        ${canManage
+          ? `<button class="btn btn-outline-primary btn-action" onclick="abrirModal(${p.id_pago})" title="Editar pago"><i class="bi bi-pencil"></i></button>`
+          : `<button class="btn btn-outline-success btn-action" onclick="mostrarComprobantePago(${p.id_pago})" title="Ver comprobante"><i class="bi bi-receipt"></i></button>`}
       </td>
     </tr>`;
   }).join('');
@@ -198,6 +251,7 @@ function renderPagos(data) {
 );
 
 function abrirModal(id = null) {
+  if (!canManage) return;
   document.getElementById('pagoId').value = '';
   document.getElementById('id_inscripcion').disabled = false;
   document.getElementById('id_inscripcion').value = '';
@@ -220,6 +274,31 @@ function abrirModal(id = null) {
 
   if (!bsModal) bsModal = new bootstrap.Modal(document.getElementById('modalPago'));
   bsModal.show();
+}
+
+function mostrarComprobantePago(id) {
+  const pago = pagos.find(p => p.id_pago === id);
+  if (!pago) return;
+  const { alumno, materia } = getDetalleInscripcion(pago);
+  const fecha = formatDate(pago.fecha_pago || pago.fecha_creacion);
+  document.getElementById('comprobanteBody').innerHTML = `
+    <div class="text-center mb-3">
+      <i class="bi bi-check-circle-fill ${pago.estado === 'PAGADO' ? 'text-success' : 'text-warning'}" style="font-size:2rem;"></i>
+      <h5 class="mt-2 mb-0">${pago.estado === 'PAGADO' ? 'Pago aprobado' : 'Pago en seguimiento'}</h5>
+      <small class="text-muted">Comprobante SAE</small>
+    </div>
+    <div class="row g-2">
+      <div class="col-5 text-muted">Folio</div><div class="col-7 fw-700">${pago.referencia || '—'}</div>
+      <div class="col-5 text-muted">Estado</div><div class="col-7">${pago.estado}</div>
+      <div class="col-5 text-muted">Inscripción</div><div class="col-7">#${pago.id_inscripcion}</div>
+      <div class="col-5 text-muted">Materia</div><div class="col-7">${materia?.nombre || '—'}</div>
+      <div class="col-5 text-muted">Alumno</div><div class="col-7">${alumno?.nombre || '—'}</div>
+      <div class="col-5 text-muted">Monto</div><div class="col-7 fw-700">$${Number(pago.monto || 0).toFixed(2)}</div>
+      <div class="col-5 text-muted">Método</div><div class="col-7">${pago.metodo_pago || '—'} ${pago.tarjeta_ultimos4 ? `**** ${pago.tarjeta_ultimos4}` : ''}</div>
+      <div class="col-5 text-muted">Fecha</div><div class="col-7">${fecha}</div>
+    </div>`;
+  if (!bsComprobanteModal) bsComprobanteModal = new bootstrap.Modal(document.getElementById('modalComprobante'));
+  bsComprobanteModal.show();
 }
 
 async function guardarPago() {

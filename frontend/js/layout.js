@@ -126,6 +126,11 @@ const Layout = {
                   <i class="bi bi-journal-bookmark me-2"></i> Materias
                 </a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link" data-page="pagos" href="pagos.html">
+                  <i class="bi bi-cash-coin me-2"></i> Pagos
+                </a>
+              </li>
               ` : ''}
 
               ${Auth.hasRole('ALUMNO') ? `

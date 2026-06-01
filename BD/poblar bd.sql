@@ -167,14 +167,20 @@ SELECT 'Usuarios demo creados. Password para todos: Admin123' AS Resultado;
 SELECT usuario FROM usuarios WHERE usuario IN ('Admin','ControlEscolar','Docente1','Docente2','Alumno1','Alumno2','Alumno3','Alumno4','Alumno5');
 
 -- Pagos de ejemplo para demostracion
-INSERT INTO pagos (id_inscripcion, monto, estado, fecha_pago)
-SELECT i.id_inscripcion, v.monto, v.estado, v.fecha_pago
+INSERT INTO pagos (
+    id_inscripcion, monto, estado, metodo_pago, titular,
+    tarjeta_ultimos4, referencia, concepto, fecha_pago, fecha_creacion
+)
+SELECT
+    i.id_inscripcion, v.monto, v.estado, 'TARJETA', v.titular,
+    v.tarjeta_ultimos4, v.referencia, 'Pago de inscripcion',
+    v.fecha_pago, GETDATE()
 FROM (VALUES
-    ('2026001', 'SIS101', 1500.00, 'PAGADO', GETDATE()),
-    ('2026001', 'MAT101', 1500.00, 'PENDIENTE', NULL),
-    ('2026002', 'SIS101', 1500.00, 'PENDIENTE', NULL),
-    ('2026004', 'SIS101', 1500.00, 'PAGADO', GETDATE())
-) v(matricula, clave, monto, estado, fecha_pago)
+    ('2026001', 'SIS101', 1500.00, 'PAGADO', 'Juan Perez Lopez', '1111', 'PAY-2026001-SIS101', GETDATE()),
+    ('2026001', 'MAT101', 1500.00, 'PENDIENTE', 'Juan Perez Lopez', '1111', 'PAY-2026001-MAT101', NULL),
+    ('2026002', 'SIS101', 1500.00, 'PENDIENTE', 'Maria Garcia Ramos', '2222', 'PAY-2026002-SIS101', NULL),
+    ('2026004', 'SIS101', 1500.00, 'PAGADO', 'Ana Torres Vega', '4444', 'PAY-2026004-SIS101', GETDATE())
+) v(matricula, clave, monto, estado, titular, tarjeta_ultimos4, referencia, fecha_pago)
 JOIN alumnos a ON a.matricula = v.matricula
 JOIN materias m ON m.clave = v.clave
 JOIN inscripciones i ON i.id_alumno = a.id_alumno AND i.id_materia = m.id_materia

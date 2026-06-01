@@ -258,6 +258,65 @@ BEGIN
 END
 GO
 
+-- PASO 13.1: Columnas de comprobante y metodo de pago simulado
+IF OBJECT_ID('pagos', 'U') IS NOT NULL
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'pagos' AND COLUMN_NAME = 'metodo_pago'
+    )
+    BEGIN
+        ALTER TABLE pagos ADD metodo_pago VARCHAR(30) NULL;
+        PRINT 'Columna metodo_pago agregada a pagos.';
+    END
+
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'pagos' AND COLUMN_NAME = 'titular'
+    )
+    BEGIN
+        ALTER TABLE pagos ADD titular VARCHAR(100) NULL;
+        PRINT 'Columna titular agregada a pagos.';
+    END
+
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'pagos' AND COLUMN_NAME = 'tarjeta_ultimos4'
+    )
+    BEGIN
+        ALTER TABLE pagos ADD tarjeta_ultimos4 CHAR(4) NULL;
+        PRINT 'Columna tarjeta_ultimos4 agregada a pagos.';
+    END
+
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'pagos' AND COLUMN_NAME = 'referencia'
+    )
+    BEGIN
+        ALTER TABLE pagos ADD referencia VARCHAR(50) NULL;
+        PRINT 'Columna referencia agregada a pagos.';
+    END
+
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'pagos' AND COLUMN_NAME = 'concepto'
+    )
+    BEGIN
+        ALTER TABLE pagos ADD concepto VARCHAR(150) NULL;
+        PRINT 'Columna concepto agregada a pagos.';
+    END
+
+    IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'pagos' AND COLUMN_NAME = 'fecha_creacion'
+    )
+    BEGIN
+        ALTER TABLE pagos ADD fecha_creacion DATETIME NULL;
+        PRINT 'Columna fecha_creacion agregada a pagos.';
+    END
+END
+GO
+
 -- PASO 14: Normalizar datos existentes antes de agregar CHECK constraints
 IF OBJECT_ID('usuarios', 'U') IS NOT NULL
 BEGIN
@@ -334,6 +393,26 @@ BEGIN
     UPDATE pagos
     SET estado = 'PENDIENTE'
     WHERE estado IS NULL OR UPPER(estado) NOT IN ('PENDIENTE', 'PAGADO', 'RECHAZADO');
+
+    UPDATE pagos
+    SET metodo_pago = 'TARJETA'
+    WHERE metodo_pago IS NULL OR UPPER(metodo_pago) NOT IN ('TARJETA');
+
+    UPDATE pagos
+    SET referencia = CONCAT('PAY-', RIGHT('000000' + CAST(id_pago AS VARCHAR(6)), 6))
+    WHERE referencia IS NULL OR LTRIM(RTRIM(referencia)) = '';
+
+    UPDATE pagos
+    SET concepto = 'Pago de inscripcion'
+    WHERE concepto IS NULL OR LTRIM(RTRIM(concepto)) = '';
+
+    UPDATE pagos
+    SET fecha_creacion = COALESCE(fecha_pago, GETDATE())
+    WHERE fecha_creacion IS NULL;
+
+    UPDATE pagos
+    SET tarjeta_ultimos4 = NULL
+    WHERE tarjeta_ultimos4 IS NOT NULL AND tarjeta_ultimos4 NOT LIKE '[0-9][0-9][0-9][0-9]';
 END
 GO
 
@@ -486,6 +565,30 @@ AND NOT EXISTS (
 BEGIN
     ALTER TABLE pagos WITH CHECK ADD CONSTRAINT CK_pagos_estado_valido CHECK (estado IS NOT NULL AND UPPER(estado) IN ('PENDIENTE', 'PAGADO', 'RECHAZADO'));
     PRINT 'CHECK CK_pagos_estado_valido agregado.';
+END
+GO
+
+IF OBJECT_ID('pagos', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('pagos') AND name = 'CK_pagos_metodo_valido'
+)
+BEGIN
+    ALTER TABLE pagos WITH CHECK ADD CONSTRAINT CK_pagos_metodo_valido CHECK (metodo_pago IS NOT NULL AND UPPER(metodo_pago) IN ('TARJETA'));
+    PRINT 'CHECK CK_pagos_metodo_valido agregado.';
+END
+GO
+
+IF OBJECT_ID('pagos', 'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID('pagos') AND name = 'CK_pagos_tarjeta_ultimos4'
+)
+BEGIN
+    ALTER TABLE pagos WITH CHECK ADD CONSTRAINT CK_pagos_tarjeta_ultimos4 CHECK (
+        tarjeta_ultimos4 IS NULL OR tarjeta_ultimos4 LIKE '[0-9][0-9][0-9][0-9]'
+    );
+    PRINT 'CHECK CK_pagos_tarjeta_ultimos4 agregado.';
 END
 GO
 

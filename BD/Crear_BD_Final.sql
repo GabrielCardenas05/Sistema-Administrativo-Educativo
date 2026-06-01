@@ -114,10 +114,20 @@ CREATE TABLE pagos (
     id_inscripcion INT NOT NULL,
     monto DECIMAL(10,2) NOT NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    metodo_pago VARCHAR(30) NOT NULL DEFAULT 'TARJETA',
+    titular VARCHAR(100) NULL,
+    tarjeta_ultimos4 CHAR(4) NULL,
+    referencia VARCHAR(50) NULL,
+    concepto VARCHAR(150) NULL,
     fecha_pago DATETIME,
+    fecha_creacion DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (id_inscripcion) REFERENCES inscripciones(id_inscripcion),
     CONSTRAINT CK_pagos_monto_positivo CHECK (monto > 0),
-    CONSTRAINT CK_pagos_estado_valido CHECK (UPPER(estado) IN ('PENDIENTE', 'PAGADO', 'RECHAZADO'))
+    CONSTRAINT CK_pagos_estado_valido CHECK (UPPER(estado) IN ('PENDIENTE', 'PAGADO', 'RECHAZADO')),
+    CONSTRAINT CK_pagos_metodo_valido CHECK (UPPER(metodo_pago) IN ('TARJETA')),
+    CONSTRAINT CK_pagos_tarjeta_ultimos4 CHECK (
+        tarjeta_ultimos4 IS NULL OR tarjeta_ultimos4 LIKE '[0-9][0-9][0-9][0-9]'
+    )
 );
 
 CREATE INDEX IX_pagos_inscripcion
