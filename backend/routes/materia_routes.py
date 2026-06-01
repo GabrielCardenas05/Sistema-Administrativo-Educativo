@@ -3,12 +3,22 @@ from repositories.materia_repo import (
     get_all_materias, get_materia_by_id,
     create_materia, update_materia, delete_materia
 )
+from repositories.alumno_repo import get_alumno_by_usuario_id
 from utils.auth_decorators import require_auth, require_role
 from utils.responses import ok, created, error, not_found
-from utils.constants import ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO
+from utils.constants import ROL_ADMINISTRADOR, ROL_ADMINISTRATIVO, ROL_ALUMNO
 from repositories.audit_repo import log_audit
 
 materias_bp = Blueprint("materias", __name__, url_prefix="/api/materias")
+
+
+def _is_student_only(current_user) -> bool:
+    roles = [r.upper() for r in current_user.get("roles", [])]
+    return (
+        ROL_ALUMNO in roles
+        and ROL_ADMINISTRADOR not in roles
+        and ROL_ADMINISTRATIVO not in roles
+    )
 
 
 @materias_bp.route("/", methods=["GET"])
@@ -16,6 +26,11 @@ materias_bp = Blueprint("materias", __name__, url_prefix="/api/materias")
 def listar_materias(current_user):
     id_carrera = request.args.get("id_carrera", type=int)
     semestre = request.args.get("semestre", type=int)
+    if _is_student_only(current_user):
+        alumno = get_alumno_by_usuario_id(current_user["id_usuario"])
+        if not alumno:
+            return not_found("Perfil de alumno no encontrado")
+        id_carrera = alumno.id_carrera
     materias = get_all_materias(id_carrera=id_carrera, semestre=semestre)
     return ok(data=[m.to_dict() for m in materias])
 
@@ -26,6 +41,12 @@ def obtener_materia(current_user, id_materia):
     materia = get_materia_by_id(id_materia)
     if not materia:
         return not_found("Materia no encontrada")
+    if _is_student_only(current_user):
+        alumno = get_alumno_by_usuario_id(current_user["id_usuario"])
+        if not alumno:
+            return not_found("Perfil de alumno no encontrado")
+        if materia.id_carrera != alumno.id_carrera:
+            return not_found("Materia no encontrada")
     return ok(data=materia.to_dict())
 
 

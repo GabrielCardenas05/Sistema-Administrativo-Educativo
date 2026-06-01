@@ -76,10 +76,10 @@
     <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="table-light">
-          <tr><th>Clave</th><th>Nombre</th><th>Carrera</th><th>Semestre</th><th>Horario</th><th>Cupo</th><th>Estado</th><th class="text-end" id="thAcciones">Acciones</th></tr>
+          <tr><th>Clave</th><th>Nombre</th><th>Carrera</th><th>Semestre</th><th>Horario</th><th>Docente</th><th>Cupo</th><th>Estado</th><th class="text-end" id="thAcciones">Acciones</th></tr>
         </thead>
         <tbody id="tbodyMaterias">
-          <tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+          <tr><td colspan="9" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -217,11 +217,17 @@ function formatHorario(materia) {
   return [dia, hora].filter(Boolean).join(' · ') || 'No registrado';
 }
 
+function formatDocentes(materia) {
+  const docentes = materia.docentes || [];
+  if (!docentes.length) return '<small class="text-muted">Sin docente</small>';
+  return docentes.map(d => `<span class="badge bg-light text-dark">${d.nombre}</span>`).join('<br>');
+}
+
 function renderMaterias(data) {
   document.getElementById('totalLabel').textContent = `${data.length} registros`;
   const tbody = document.getElementById('tbodyMaterias');
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="${canEdit ? 8 : 7}" class="text-center text-muted py-5"><i class="bi bi-journal-bookmark" style="font-size:2rem;display:block;"></i>Sin materias</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${canEdit ? 9 : 8}" class="text-center text-muted py-5"><i class="bi bi-journal-bookmark" style="font-size:2rem;display:block;"></i>Sin materias</td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(m => {
@@ -233,6 +239,7 @@ function renderMaterias(data) {
       <td><small class="text-muted">${carrera?.nombre || '—'}</small></td>
       <td class="text-center">${m.semestre}°</td>
       <td><small class="${horario === 'No registrado' ? 'text-muted' : ''}">${horario}</small></td>
+      <td>${formatDocentes(m)}</td>
       <td class="text-center">${m.cupo}</td>
       <td><span class="badge ${m.activa ? 'bg-success' : 'bg-secondary'}">${m.activa ? 'Activa' : 'Inactiva'}</span></td>
       ${canEdit ? `<td class="text-end">

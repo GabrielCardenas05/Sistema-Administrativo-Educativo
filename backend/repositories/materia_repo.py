@@ -9,6 +9,32 @@ def _row_to_materia(row) -> Materia:
     )
 
 
+def _attach_docentes(cursor, materias: list[Materia]) -> None:
+    if not materias:
+        return
+    cursor.execute("SELECT OBJECT_ID('materia_docente', 'U')")
+    if not cursor.fetchone()[0]:
+        return
+    ids = [m.id_materia for m in materias]
+    placeholders = ",".join("?" for _ in ids)
+    cursor.execute(f"""
+        SELECT md.id_materia, d.id_docente, d.nombre, d.especialidad
+        FROM materia_docente md
+        INNER JOIN docentes d ON d.id_docente = md.id_docente
+        WHERE md.id_materia IN ({placeholders})
+        ORDER BY d.nombre
+    """, ids)
+    docentes_por_materia = {id_materia: [] for id_materia in ids}
+    for row in cursor.fetchall():
+        docentes_por_materia.setdefault(row[0], []).append({
+            "id_docente": row[1],
+            "nombre": row[2],
+            "especialidad": row[3],
+        })
+    for materia in materias:
+        materia.docentes = docentes_por_materia.get(materia.id_materia, [])
+
+
 def get_all_materias(id_carrera=None, semestre=None) -> list[Materia]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -23,8 +49,10 @@ def get_all_materias(id_carrera=None, semestre=None) -> list[Materia]:
     sql += " ORDER BY nombre"
     cursor.execute(sql, params)
     rows = cursor.fetchall()
+    materias = [_row_to_materia(r) for r in rows]
+    _attach_docentes(cursor, materias)
     conn.close()
-    return [_row_to_materia(r) for r in rows]
+    return materias
 
 
 def get_materia_by_id(id_materia: int) -> Materia | None:
@@ -35,8 +63,11 @@ def get_materia_by_id(id_materia: int) -> Materia | None:
         (id_materia,)
     )
     row = cursor.fetchone()
+    materia = _row_to_materia(row) if row else None
+    if materia:
+        _attach_docentes(cursor, [materia])
     conn.close()
-    return _row_to_materia(row) if row else None
+    return materia
 
 
 def create_materia(clave: str, nombre: str, id_carrera: int, semestre: int, cupo: int) -> dict:

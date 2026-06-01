@@ -16,6 +16,7 @@ El proyecto queda listo para presentacion funcional con los siguientes puntos cu
 - Gestion de docentes.
 - Gestion de carreras.
 - Gestion de materias.
+- Asignacion de docentes a materias mediante relacion `materia_docente`.
 - Gestion de inscripciones.
 - Consulta y administracion de pagos asociados a inscripciones.
 - Inscripcion de alumnos a materias de su semestre con pago simulado y comprobante.
@@ -177,6 +178,7 @@ En inscripciones se valida:
 - Que el alumno no consulte inscripciones ajenas cuando usa rol ALUMNO.
 - Que las bajas tengan un flujo formal con estado `BAJA`, motivo y fecha de baja.
 - Que el alumno solo pueda inscribirse desde la interfaz a materias de su carrera y semestre.
+- Que el alumno solo pueda consultar materias de su propia carrera desde el backend.
 
 En usuarios se valida:
 
@@ -212,6 +214,7 @@ En base de datos:
 - `materias.cupo` queda limitado a valores positivos.
 - Los estados de alumnos, inscripciones, pagos y tickets quedan restringidos por `CHECK`.
 - Las bajas de inscripcion exigen `motivo_baja` y `fecha_baja`.
+- `materia_docente` permite registrar que docentes imparten materias sin crear inscripciones de alumnos.
 
 En concurrencia y carga:
 

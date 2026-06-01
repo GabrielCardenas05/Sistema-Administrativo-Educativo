@@ -235,6 +235,22 @@ BEGIN
 END
 GO
 
+-- PASO 12.1: Crear relacion materia-docente si no existe
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'materia_docente')
+BEGIN
+    CREATE TABLE materia_docente (
+        id_materia INT NOT NULL,
+        id_docente INT NOT NULL,
+        PRIMARY KEY (id_materia, id_docente),
+        FOREIGN KEY (id_materia) REFERENCES materias(id_materia),
+        FOREIGN KEY (id_docente) REFERENCES docentes(id_docente)
+    );
+    PRINT 'Tabla materia_docente creada.';
+END
+ELSE
+    PRINT 'Tabla materia_docente ya existe.';
+GO
+
 -- PASO 13: Columnas para flujo formal de bajas
 IF OBJECT_ID('inscripciones', 'U') IS NOT NULL
 BEGIN

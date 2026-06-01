@@ -1,5 +1,6 @@
 class Materia:
-    def __init__(self, id_materia, clave, nombre, id_carrera, semestre, cupo, activa=True):
+    def __init__(self, id_materia, clave, nombre, id_carrera, semestre, cupo,
+                 activa=True, docentes=None):
         self.id_materia = id_materia
         self.clave = clave
         self.nombre = nombre
@@ -7,6 +8,7 @@ class Materia:
         self.semestre = semestre
         self.cupo = cupo
         self.activa = bool(activa)
+        self.docentes = docentes or []
 
     def to_dict(self):
         return {
@@ -17,4 +19,5 @@ class Materia:
             "semestre": self.semestre,
             "cupo": self.cupo,
             "activa": self.activa,
+            "docentes": self.docentes,
         }

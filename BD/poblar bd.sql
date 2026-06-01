@@ -108,6 +108,25 @@ IF NOT EXISTS (SELECT 1 FROM docentes WHERE id_usuario = (SELECT id_usuario FROM
     VALUES ((SELECT id_usuario FROM usuarios WHERE usuario = 'Docente2'), 'Carlos Hernandez Soto', 'Matematicas');
 GO
 
+IF OBJECT_ID('materia_docente', 'U') IS NOT NULL
+BEGIN
+    INSERT INTO materia_docente (id_materia, id_docente)
+    SELECT m.id_materia, d.id_docente
+    FROM (VALUES
+        ('SIS101', 'Docente1'),
+        ('COM101', 'Docente1'),
+        ('MAT101', 'Docente2')
+    ) v(clave, usuario_docente)
+    JOIN materias m ON m.clave = v.clave
+    JOIN usuarios u ON u.usuario = v.usuario_docente
+    JOIN docentes d ON d.id_usuario = u.id_usuario
+    WHERE NOT EXISTS (
+        SELECT 1 FROM materia_docente md
+        WHERE md.id_materia = m.id_materia AND md.id_docente = d.id_docente
+    );
+END
+GO
+
 DECLARE @sistemas3 INT = (SELECT id_carrera FROM carreras WHERE nombre = 'Ingenieria en Sistemas');
 DECLARE @adminCarrera3 INT = (SELECT id_carrera FROM carreras WHERE nombre = 'Administracion');
 

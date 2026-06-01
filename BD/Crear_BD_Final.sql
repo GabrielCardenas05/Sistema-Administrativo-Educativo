@@ -79,6 +79,14 @@ CREATE TABLE materias (
     CONSTRAINT CK_materias_activa CHECK (activa IN (0, 1))
 );
 
+CREATE TABLE materia_docente (
+    id_materia INT NOT NULL,
+    id_docente INT NOT NULL,
+    PRIMARY KEY (id_materia, id_docente),
+    FOREIGN KEY (id_materia) REFERENCES materias(id_materia),
+    FOREIGN KEY (id_docente) REFERENCES docentes(id_docente)
+);
+
 CREATE TABLE periodos (
     id_periodo INT IDENTITY(1,1) PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL,
